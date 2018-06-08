@@ -1,0 +1,1582 @@
+﻿
+  <!DOCTYPE html>
+  <html lang='en'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		leave = function (leavingLink) {
+		    //open an external link
+		    window.open(leavingLink.attr('href'));
+		    cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		showLeavingMessage = function (leavingLink) {
+		    //show the leaving message
+		    $('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+		    //$("body").css("background-color", "grey");
+		    $('#overlay').show();
+
+		}
+
+		cancelLeaving = function () {
+		    //cancel leaving.  hide the leaving box
+		    clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+		    $('#overlay').hide();
+		}
+
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/dso' class='programheader' style='color: #EBAF00;'>Defense Sciences Office (DSO)</a></span></div>
+      <div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/graphs' class='programlink'>GRAPHS</a></h2>
+<div class='left-paragraph'><p>GRAPHS is developing scalable algorithms and statistical methods for the analysis and modelling of very large and dynamically evolving networks, with the intent of developing predictive methods for anomalous and exceptional events in networks. A major focus of the program has been quantitative and structural aspects of large networks and the attending models. The program is divided into a few thrusts, with performers working in sampling techniques for graphs, geometric embeddings into hyperbolic spaces, Gaussian Conditional Random Fields, meso-level network behaviors, and link prediction.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-reza-ghanadan' class='programmanagerlink'>Dr. Reza Ghanadan</a></p><p>Contact: <a href='mailto:reza.ghanadan@darpa.mil'>reza.ghanadan@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p>
+      <p>Last updated: November 28, 2016</p></div>
+      
+      <div id='dialog'></div>
+      <div id='tabs' class='table-tabs'>
+          <ul>
+              <li><a href='#tabs0'>Software</a></li>
+              <li><a href='#tabs1'>Publications</a></li>
+              <li><a href='#tabs300'>Search</a></li>
+          </ul>
+
+          <div id='software'>
+              <div id='tabs0'>
+                  <input class='search' placeholder='Search' id='search0' /><button class='clear_button' id='clear0'>Clear</button>
+                  <table id='sftwr' class='tablesorter'>
+                      <thead>
+                          <tr><th>Team</th><th>Project</th><th>Description</th><th>Instructional Material</th><th>Category</th><th>Code</th><th>License</th></tr>
+                      </thead>
+                      <tbody class='list'>
+                          <TR>
+                              <TD class='team'>MINER</TD>
+                              <TD width='202' class='project'><a href='http://snap.stanford.edu/snapvx/' class='external' target='_blank'>SnapVX</a></TD>
+                              <TD class=description> SnapVX is a Python-based convex optimization solver for problems defined on graphs. It provides a fast and scalable solution with guaranteed global convergence. SnapVX combines the graph capabilities of Snap.py with the convex solver from CVXPY. </TD>
+                              <TD class=instructional material></TD>
+                              <TD class=category>Analytics</TD>
+                              <TD class=code> <a href=https://github.com/snap-stanford/snapvx class='external' target='_blank'>https://github.com/snap-stanford/snapvx</a> </TD>
+                              <TD class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span></TD>
+                          </TR>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+          <div id='publications'>
+              <div id='tabs1'>
+                  <input class='search' placeholder='Search' id='search1' /><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
+                      <thead>
+                          <tr><th>Team</th><th>Title</th><th>Link</th></tr>
+                      </thead>
+                      <tbody class='list'>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>An In-Depth Analysis of Stochastic Kronecker Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1102.5046v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1102.5046v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Wedge Sampling for Computing Clustering Coefficients and Triangle Counts on Large Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1309.3321.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1309.3321.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>A Scalable Generative Graph Model with Community Structure</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1302.6636v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1302.6636v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Counting Triangles in Massive Graphs with MapReduce</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1301.5887v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1301.5887v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Degree Relations of Triangles in Real-world Networks and Models</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1207.7125.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1207.7125.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>A Scalable Null Model for Directed Graphs Matching All Degree Distributions: In, Out, and Reciprocal</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1210.5288.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1210.5288.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Triadic Measures on Graphs: The Power of Wedge Sampling</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1202.5230v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1202.5230v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>A Space Efficient Streaming Algorithm for Estimating Transitivity and Triangle Counts Using the Birthday Paradox</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1212.2264v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1212.2264v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Minnesota<a name='University of Minnesota'></a>, Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Dynamics of Trust Reciprocation in Multi-relational Networks</TD>
+                              <TD class='link'><a href='http://www.sandia.gov/~tgkolda/pubs/pubfiles/SiSuSrKo13-ASONAM13.pdf' class='external' target='_blank'>http://www.sandia.gov/~tgkolda/pubs/pubfiles/SiSuSrKo13-ASONAM13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Why do Simple Algorithms for Triangle Enumeration Work in the Real World?</TD>
+                              <TD class='link'><a href='http://www.cs.princeton.edu/~csesha/pubs/conf-triangle-enum.pdf' class='external' target='_blank'>http://www.cs.princeton.edu/~csesha/pubs/conf-triangle-enum.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Decompositions of Triangle-dense Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1309.7440v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1309.7440v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>Using Triangles to Improve Community Detection in Directed Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1404.5874v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1404.5874v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a>, Sandia National Laboratories<a name='Sandia National Laboratories'></a></TD>
+                              <TD class='title'>FAST-PPR: Scaling Personalized PageRank Estimation for Large Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1404.3181v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1404.3181v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Pennsylvania State University<a name='Pennsylvania State University'></a>, Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Maximum Likelihood Estimation in the Beta Model</TD>
+                              <TD class='link'><a href='http://projecteuclid.org/euclid.aos/1371150894' class='external' target='_blank'>http://projecteuclid.org/euclid.aos/1371150894</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Estimation for Dyadic-Dependent Exponential Random Graph Models</TD>
+                              <TD class='link'><a href='http://jalgstat.com/download/55/86/jas-2014_5_39-63.pdf' class='external' target='_blank'>http://jalgstat.com/download/55/86/jas-2014_5_39-63.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Consistency under Sampling of Exponential Random Graph Models</TD>
+                              <TD class='link'><a href='http://projecteuclid.org/euclid.aos/1366980556' class='external' target='_blank'>http://projecteuclid.org/euclid.aos/1366980556</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Pennsylvania State University<a name='Pennsylvania State University'></a></TD>
+                              <TD class='title'>Graphical Models</TD>
+                              <TD class='link'><a href='http://msp.org/jsag/2013/5-1/jsag-v5-n1-p01-s.pdf' class='external' target='_blank'>http://msp.org/jsag/2013/5-1/jsag-v5-n1-p01-s.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>A Brief History of Statistical Models for Network Analysis and Open Challenges</TD>
+                              <TD class='link'><a href='http://dx.doi.org/10.1080/10618600.2012.738106' class='external' target='_blank'>http://dx.doi.org/10.1080/10618600.2012.738106</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>The Strength of Arcs and Edges in Interaction Networks: Elements of a Model-Based Approach</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1211.0312v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1211.0312v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Pennsylvania State University/ Illinois Institute of Technology<a name='Pennsylvania State University/ Illinois Institute of Technology'></a></TD>
+                              <TD class='title'>Combinatorial Degree Bound for Toric Ideals of Hypergraphs</TD>
+                              <TD class='link'><a href='http://www.worldscientific.com/doi/abs/10.1142/S0218196713500331' class='external' target='_blank'>http://www.worldscientific.com/doi/abs/10.1142/S0218196713500331</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Is the Privacy of Network Data an Oxymoron?</TD>
+                              <TD class='link'><a href='http://repository.cmu.edu/cgi/viewcontent.cgi?article=1097&context=jpc' class='external' target='_blank'>http://repository.cmu.edu/cgi/viewcontent.cgi?article=1097&context=jpc</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Illinois Institute of Technology<a name='Illinois Institute of Technology'></a></TD>
+                              <TD class='title'>Toric Algebra of Hypergraphs</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs10801-013-0444-y' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs10801-013-0444-y</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Consistency of Spectral Clustering in Sparse Stochastic Block Models</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1312.2050v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1312.2050v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Stable Mixed Graphs</TD>
+                              <TD class='link'><a href='http://projecteuclid.org/euclid.bj/1386078605' class='external' target='_blank'>http://projecteuclid.org/euclid.bj/1386078605</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Markov Properties for Mixed Graphs</TD>
+                              <TD class='link'><a href='http://projecteuclid.org/euclid.bj/1393594002' class='external' target='_blank'>http://projecteuclid.org/euclid.bj/1393594002</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></TD>
+                              <TD class='title'>Asymptotic Quantization of Exponential Random Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1311.1738v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1311.1738v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Illinois Institute of Technology<a name='Illinois Institute of Technology'></a></TD>
+                              <TD class='title'>Goodness-of-fit for Log-linear Network Models: Dynamic Markov Bases Using Hypergraphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1401.4896v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1401.4896v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ORNL-Stanford-Berkeley (Tree-like structure)<a name='ORNL-Stanford-Berkeley (Tree-like structure)'></a></TD>
+                              <TD class='title'>On the Hyperbolicity of Small-World and Treelike Random Graphs</TD>
+                              <TD class='link'><a href='http://www.tandfonline.com/doi/full/10.1080/15427951.2013.828336#.VAQIz0igSqQ' class='external' target='_blank'>http://www.tandfonline.com/doi/full/10.1080/15427951.2013.828336#.VAQIz0igSqQ</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ORNL-Stanford-Berkeley (Tree-like structure)<a name='ORNL-Stanford-Berkeley (Tree-like structure)'></a></TD>
+                              <TD class='title'>Evaluating OpenMP Tasking at Scale for the Computation of Graph Hyperbolicity</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-40698-0_6' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-40698-0_6</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ORNL-Stanford-Berkeley (Tree-like structure)<a name='ORNL-Stanford-Berkeley (Tree-like structure)'></a></TD>
+                              <TD class='title'>Tree-like Structure in Large Social and Information Networks</TD>
+                              <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6729484' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6729484</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ORNL-Stanford-Berkeley (Tree-like structure)<a name='ORNL-Stanford-Berkeley (Tree-like structure)'></a></TD>
+                              <TD class='title'>Think Locally, Act Locally: The Detection of Small, Medium-Sized, and Large Communities in Large Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1403.3795' class='external' target='_blank'>http://arxiv.org/abs/1403.3795</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ORNL-Stanford-Berkeley (Tree-like structure)<a name='ORNL-Stanford-Berkeley (Tree-like structure)'></a></TD>
+                              <TD class='title'>Anti-differentiating Approximation Algorithms: A Case Study with Min-cuts, Spectral, and Flow</TD>
+                              <TD class='link'><a href='http://jmlr.org/proceedings/papers/v32/gleich14.html' class='external' target='_blank'>http://jmlr.org/proceedings/papers/v32/gleich14.html</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ORNL-Stanford-Berkeley (Tree-like structure)<a name='ORNL-Stanford-Berkeley (Tree-like structure)'></a></TD>
+                              <TD class='title'>Tree Decompositions and Social Graphs</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of California<a name='University of California'></a>, Santa Barbara<a name='Santa Barbara'></a></TD>
+                              <TD class='title'>Metric Embedding, Hyperbolic Space, and Social Networks</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2582139' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2582139</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Hewlett-Packard Labs<a name='Hewlett-Packard Labs'></a></TD>
+                              <TD class='title'>Mining Information from Heterogeneous Sources: A Topic Modeling Approach</TD>
+                              <TD class='link'><a href='http://www.hpl.hp.com/research/scl/papers/socialmedia/IntegrateSources.pdf' class='external' target='_blank'>http://www.hpl.hp.com/research/scl/papers/socialmedia/IntegrateSources.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of California<a name='University of California'></a>, Santa Barbara<a name='Santa Barbara'></a></TD>
+                              <TD class='title'>On the Most Likely Voronoi Diagram and Nearest Neighbor Searching</TD>
+                              <TD class='link'>to be published in ISAAC 2014</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Boston University<a name='Boston University'></a></TD>
+                              <TD class='title'>Sublinear But Never Superlinear Preferential Attachment by Local Network Growth</TD>
+                              <TD class='link'><a href='http://iopscience.iop.org/1742-5468/2013/02/P02043' class='external' target='_blank'>http://iopscience.iop.org/1742-5468/2013/02/P02043</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Boston University<a name='Boston University'></a></TD>
+                              <TD class='title'>Distinct Degrees and Their Distribution in Complex Networks</TD>
+                              <TD class='link'><a href='http://iopscience.iop.org/1742-5468/2013/06/P06002' class='external' target='_blank'>http://iopscience.iop.org/1742-5468/2013/06/P06002</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Boston University<a name='Boston University'></a></TD>
+                              <TD class='title'>Highly Dispersed Networks by Enhanced Redirection</TD>
+                              <TD class='link'><a href='http://journals.aps.org/pre/abstract/10.1103/PhysRevE.88.050802' class='external' target='_blank'>http://journals.aps.org/pre/abstract/10.1103/PhysRevE.88.050802</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Boston University<a name='Boston University'></a></TD>
+                              <TD class='title'>Choice-Driven Phase Transition in Complex Networks</TD>
+                              <TD class='link'><a href='http://iopscience.iop.org/1742-5468/2014/4/P04021' class='external' target='_blank'>http://iopscience.iop.org/1742-5468/2014/4/P04021</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Boston University<a name='Boston University'></a></TD>
+                              <TD class='title'>Highly Dispersed Networks Generated by Enhanced Redirection</TD>
+                              <TD class='link'><a href='http://iopscience.iop.org/1742-5468/2014/4/P04009/' class='external' target='_blank'>http://iopscience.iop.org/1742-5468/2014/4/P04009/</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Boston University<a name='Boston University'></a></TD>
+                              <TD class='title'>Emergence of Clustering in an Acquaintance Model Without Homophily</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1408.6596' class='external' target='_blank'>http://arxiv.org/abs/1408.6596</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Change-Point Detection in Temporal Networks Using Hierarchical Random Graphs</TD>
+                              <TD class='link'><a href='http://outlier-analytics.org/odd14kdd/odd-2014-proceedings.pdf#section*.12' class='external' target='_blank'>http://outlier-analytics.org/odd14kdd/odd-2014-proceedings.pdf#section*.12</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Detecting Change Points in the Large-Scale Structure of Evolving Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1403.0989v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1403.0989v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Learning Latent Block Structure in Weighted Networks</TD>
+                              <TD class='link'><a href='http://comnet.oxfordjournals.org/content/early/2014/06/26/comnet.cnu026.full.pdf+html' class='external' target='_blank'>http://comnet.oxfordjournals.org/content/early/2014/06/26/comnet.cnu026.full.pdf+html</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Efficiently Inferring Community Structure in Bipartite Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1403.2933v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1403.2933v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Adapting the Stochastic Block Model to Edge-Weighted Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1305.5782v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1305.5782v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Detecting Friendship within Dynamic Online Interaction Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1303.6372v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1303.6372v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Friends FTW! Friendship, Collaboration, and Competition in Halo: Reach</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1203.2268v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1203.2268v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Colorado<a name='University of Colorado'></a></TD>
+                              <TD class='title'>Complex Life Cycles in a Pond Food Web: Effects of Life Stage Structure and Parasites on Network Properties, Trophic Positions and the Fit of a Probabilistic Niche Model</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007/s00442-013-2806-5#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007/s00442-013-2806-5#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Continuous Conditional Random Fields for Efficient Regression in Large Fully Connected Graphs</TD>
+                              <TD class='link'><a href='http://www.dabi.temple.edu/~zoran/papers/KostaAAAI13.pdf' class='external' target='_blank'>http://www.dabi.temple.edu/~zoran/papers/KostaAAAI13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Imputation of Missing Links and Attributes in Longitudinal Social Surveys</TD>
+                              <TD class='link'><a href='http://www.dabi.temple.edu/~zoran/papers/MachLearn2013.pdf' class='external' target='_blank'>http://www.dabi.temple.edu/~zoran/papers/MachLearn2013.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Which Links Should I Use? A Variogram Based Selection of Relationship Measures for Prediction of Node Attributes in Temporal Multigraphs</TD>
+                              <TD class='link'><a href='http://www.dabi.temple.edu/~zoran/papers/alexeyASONAM13.pdf' class='external' target='_blank'>http://www.dabi.temple.edu/~zoran/papers/alexeyASONAM13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Distributed Gaussian Conditional Random Fields Based Regression for Large Evolving Graphs</TD>
+                              <TD class='link'><a href='http://www.dabi.temple.edu/~zoran/papers/sdm14_networksgraphs.pdf' class='external' target='_blank'>http://www.dabi.temple.edu/~zoran/papers/sdm14_networksgraphs.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Dynamic Distributed Predictive Learning Models that Preserve Privacy for Hospitals with Insufficient Labeled Data</TD>
+                              <TD class='link'><a href='http://www.dabi.temple.edu/~zoran/papers/NetwModelAnalHealthInformBioinforma2013.pdf' class='external' target='_blank'>http://www.dabi.temple.edu/~zoran/papers/NetwModelAnalHealthInformBioinforma2013.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Panning for Gold: Using Variograms to Select Useful Connections in a Temporal Multigraph Setting</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs13278-014-0211-7#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs13278-014-0211-7#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Hospital Pricing Estimation by Gaussian Conditions Random Fields Based Regression on Graphs</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Readmission Classification Using Stacked Regularized Logistic Regression Models</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Temple University<a name='Temple University'></a></TD>
+                              <TD class='title'>Neural Gaussian Conditional Random Fields</TD>
+                              <TD class='link'><a href='http://www.dabi.temple.edu/~zoran/papers/ngcrf_ecml14.pdf' class='external' target='_blank'>http://www.dabi.temple.edu/~zoran/papers/ngcrf_ecml14.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>LeHigh University<a name='LeHigh University'></a></TD>
+                              <TD class='title'>Convergence of Trust-Region Methods Based on Probabilistic Models</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1304.2808v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1304.2808v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>LeHigh University<a name='LeHigh University'></a></TD>
+                              <TD class='title'>Efficient Quasi-Newton Proximal Method for Large Scale Sparse Optimization</TD>
+                              <TD class='link'><a href='http://opt.kyb.tuebingen.mpg.de/papers/opt2013_submission_10.pdf' class='external' target='_blank'>http://opt.kyb.tuebingen.mpg.de/papers/opt2013_submission_10.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>LeHigh University<a name='LeHigh University'></a></TD>
+                              <TD class='title'>Practical Inexact Proximal Quasi-Newton Method with Global Complexity Analysis</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1311.6547v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1311.6547v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Approximate Inference in Continuous Determinantal Point Processes</TD>
+                              <TD class='link'><a href='http://papers.nips.cc/paper/4916-approximate-inference-in-continuous-determinantal-processes.pdf' class='external' target='_blank'>http://papers.nips.cc/paper/4916-approximate-inference-in-continuous-determinantal-processes.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Nystrom Approximation for Large-Scale Determinantal Processes</TD>
+                              <TD class='link'><a href='https://www.stat.washington.edu/~ebfox/publications/AISTATS2013.pdf' class='external' target='_blank'>https://www.stat.washington.edu/~ebfox/publications/AISTATS2013.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Spatio-Temporal Low Count Processes with Application to Violent Crime Events</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1304.5642v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1304.5642v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Bayesian Nonparametric Covariance Regression</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1101.2017v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1101.2017v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Autoregressive Models for Variance Matrices: Stationary Inverse Wishart Processes</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1107.5239v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1107.5239v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Joint Modeling of Multiple Time Series via the Beta Process with Application to Motion Capture Segmentation</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1308.4747v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1308.4747v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Parsing Epileptic Events Using a Markov Switching Process for Correlated Time Series</TD>
+                              <TD class='link'><a href='https://www.stat.washington.edu/~ebfox/publications/icml2013.pdf' class='external' target='_blank'>https://www.stat.washington.edu/~ebfox/publications/icml2013.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Modeling the Complex Dynamics and Changing Correlations of Epileptic Events</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1402.6951v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1402.6951v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Representing Documents Through Their Readers</TD>
+                              <TD class='link'><a href='https://www.stat.washington.edu/~ebfox/publications/badgepaper-kdd2013.pdf' class='external' target='_blank'>https://www.stat.washington.edu/~ebfox/publications/badgepaper-kdd2013.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>A Bayesian Approach for Predicting the Popularity of Tweets</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1304.6777.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1304.6777.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Stochastic Gradient Hamiltonian Monte Carlo</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1402.4102v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1402.4102v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Washington<a name='University of Washington'></a></TD>
+                              <TD class='title'>Bayesian Nonparametric Models of Sparse and Exchangeable Random Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1401.1137v2.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1401.1137v2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Exploiting Social Network Structure for Person-to-Person Sentiment Analysis</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/sentiment-tacl14.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/sentiment-tacl14.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Uncovering the Structure and Temporal Dynamics of Information Propagation</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/netrate-netsci14.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/netrate-netsci14.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Discovering Social Circles in Ego Networks</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/circles-tkdd14.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/circles-tkdd14.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Detecting Cohesive and 2-mode Communities in Directed and Undirected Networks</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/coda-wsdm14.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/coda-wsdm14.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Community Detection in Networks with Node Attributes</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/cesna-icdm13.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/cesna-icdm13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Information Cartography: Creating Zoomable, Large-Scale Maps of Information</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/metro-kdd13.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/metro-kdd13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Overlapping Community Detection at Scale: A Nonnegative Matrix Factorization Approach</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Community-Affiliation Graph Model for Overlapping Network Community Detection</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/agmfit-icdm12.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/agmfit-icdm12.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Defining and Evaluating Network Communities based on Ground-truth</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA Stanford University<a name='MEGA Stanford University'></a></TD>
+                              <TD class='title'>Learning to Discover Social Circles in Ego Networks</TD>
+                              <TD class='link'><a href='http://cs.stanford.edu/people/jure/pubs/circles-nips12.pdf' class='external' target='_blank'>http://cs.stanford.edu/people/jure/pubs/circles-nips12.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a>, Sandia National Labs<a name='Sandia National Labs'></a></TD>
+                              <TD class='title'>FAST-PPR: Scaling Personalized PageRank Estimation for Large Graphs</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1404.3181' class='external' target='_blank'>http://arxiv.org/abs/1404.3181</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Gossip: Identifying Central Individuals in a Social Network</TD>
+                              <TD class='link'><a href='http://ssrn.com/abstract=2425379' class='external' target='_blank'>http://ssrn.com/abstract=2425379</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Networks of Military Alliances, Wars, and International Trade</TD>
+                              <TD class='link'><a href='http://ssrn.com/abstract=2389300' class='external' target='_blank'>http://ssrn.com/abstract=2389300</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Networks in the Understanding of Economic Behaviors</TD>
+                              <TD class='link'><a href='http://ssrn.com/abstract=2404632' class='external' target='_blank'>http://ssrn.com/abstract=2404632</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Culture-Dependent Strategies in Coordination Games</TD>
+                              <TD class='link'><a href='http://web.stanford.edu/~jacksonm/Jackson-Xing-CultureAndCoordination-PNAS-2014.pdf' class='external' target='_blank'>http://web.stanford.edu/~jacksonm/Jackson-Xing-CultureAndCoordination-PNAS-2014.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Financial Networks and Contagion</TD>
+                              <TD class='link'><a href='http://ssrn.com/abstract=2175056' class='external' target='_blank'>http://ssrn.com/abstract=2175056</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Tractable and Consistent Random Graph Models</TD>
+                              <TD class='link'><a href='http://ssrn.com/abstract=2150428' class='external' target='_blank'>http://ssrn.com/abstract=2150428</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford Graphs Team<a name='Stanford Graphs Team'></a></TD>
+                              <TD class='title'>Games on Networks</TD>
+                              <TD class='link'><a href='http://papers.ssrn.com/abstract=2136179' class='external' target='_blank'>http://papers.ssrn.com/abstract=2136179</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MEGA<a name='MEGA'></a></TD>
+                              <TD class='title'>A Dynamic Network Game for the Adoption of New Technologies</TD>
+                              <TD class='link'><a href='http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2425490' class='external' target='_blank'>http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2425490</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a>, Duke University<a name='Duke University'></a></TD>
+                              <TD class='title'>Efficient Primal-Dual Algorithms for MapReduce</TD>
+                              <TD class='link'><a href='http://web.stanford.edu/~ashishg/papers/distribute/densest-AHK.pdf' class='external' target='_blank'>http://web.stanford.edu/~ashishg/papers/distribute/densest-AHK.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+                              <TD class='title'>Personalized PageRank to a Target Node</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1304.4658' class='external' target='_blank'>http://arxiv.org/abs/1304.4658</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>ICME Stanford University<a name='ICME Stanford University'></a></TD>
+                              <TD class='title'>Dimension Independent Similarity Computation</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2567715' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2567715</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+                              <TD class='title'>Re-Incentivizing Discovery: Mechanisms for Partial-Progress Sharing in Research</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2602888' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2602888</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Single Pass Spectral Sparsification in Dynamic Streams</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1407.1289' class='external' target='_blank'>http://arxiv.org/abs/1407.1289</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a>, IBM Almaden<a name='IBM Almaden'></a></TD>
+                              <TD class='title'>Spanners and Sparsifiers in Dynamic Streams</TD>
+                              <TD class='link'><a href='http://researcher.watson.ibm.com/researcher/files/us-dpwoodru/kw.pdf' class='external' target='_blank'>http://researcher.watson.ibm.com/researcher/files/us-dpwoodru/kw.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a>, Microsoft Research Silicon Valley<a name='Microsoft Research Silicon Valley'></a></TD>
+                              <TD class='title'>On Differentially Private Low Rank Approximation</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2627918' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2627918</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+                              <TD class='title'>Better Bounds for Matchings in the Streaming Model</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2627938' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2627938</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>(Nearly) Sample-Optimal Sparse Fourier Transform</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2634110' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2634110</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a>, Microsoft Research New England<a name='Microsoft Research New England'></a></TD>
+                              <TD class='title'>Streaming Lower Bounds for Approximating MAX-CUT / Approximating Matching Size from Random Streams</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1409.2138' class='external' target='_blank'>http://arxiv.org/abs/1409.2138</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+                              <TD class='title'>Improved ARV Rounding in Small-set Expanders and Graphs of Bounded Threshold Rank</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1304.2060' class='external' target='_blank'>http://arxiv.org/abs/1304.2060</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Stanford University<a name='Stanford University'></a>, IBM Almaden Research Center<a name='IBM Almaden Research Center'></a></TD>
+                              <TD class='title'>Online Submodular Welfare Maximization: Greedy is Optimal</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2627905' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2627905</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Reducing Degeneracy in Maximum Entropy Models of Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1407.0991' class='external' target='_blank'>http://arxiv.org/abs/1407.0991</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>The Brain in Space</TD>
+                              <TD class='link'><a href='http://obelix.phys.nd.edu/~toro/archive/IPSENChapterV2.pdf' class='external' target='_blank'>http://obelix.phys.nd.edu/~toro/archive/IPSENChapterV2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Cortical High-Density Counterstream Architectures</TD>
+                              <TD class='link'><a href='http://www.sciencemag.org/content/342/6158/1238406.abstract' class='external' target='_blank'>http://www.sciencemag.org/content/342/6158/1238406.abstract</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Predicting Commuter Flows in Spatial Networks Using a Radiation Model Based on Temporal Ranges</TD>
+                              <TD class='link'><a href='http://obelix.phys.nd.edu/~toro/archive/SpatialNetFlows_Combined.pdf' class='external' target='_blank'>http://obelix.phys.nd.edu/~toro/archive/SpatialNetFlows_Combined.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>On the Swap-Distances of Different Realizations of a Graphical Degree Sequence</TD>
+                              <TD class='link'><a href='http://www.renyi.hu/~miklosi/EKM-CPC-resubmit2.pdf' class='external' target='_blank'>http://www.renyi.hu/~miklosi/EKM-CPC-resubmit2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>A Decomposition Based Proof for Fast Mixing of a Markov Chain Over Balanced Realizations of a Joint Degree Matrix</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1307.5295v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1307.5295v1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Constructing, Sampling and Counting Graphical Realizations of Restricted Degree Sequences</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1301.7523v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1301.7523v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Towards Random Uniform Sampling of Bipartite Graphs with Given Degree Sequence</TD>
+                              <TD class='link'><a href='http://www.renyi.hu/~miklosi/MES-EJC13.pdf' class='external' target='_blank'>http://www.renyi.hu/~miklosi/MES-EJC13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Symmetry in Critical Random Boolean Network Dynamics</TD>
+                              <TD class='link'><a href='http://dx.doi.org/10.1103/PhysRevE.89.042808' class='external' target='_blank'>http://dx.doi.org/10.1103/PhysRevE.89.042808</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Fast and Accurate Determination of Modularity and its Effect Size</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Modeling Interacting Dynamic Networks: III. Extraordinary Properties in a Population of Extreme Introverts and Extroverts</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1408.5421' class='external' target='_blank'>http://arxiv.org/abs/1408.5421</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Extreme Thouless Effect in a Minimal Model of Dynamic Social Networks</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Dominating Scale-Free Networks Using Generalized Probabilistic Methods</TD>
+                              <TD class='link'><a href='http://www.nature.com/srep/2014/140909/srep06308/full/srep06308.html' class='external' target='_blank'>http://www.nature.com/srep/2014/140909/srep06308/full/srep06308.html</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Minimum Dominating Sets in Scale-Free Network Ensembles</TD>
+                              <TD class='link'><a href='http://www.nature.com/srep/2013/130426/srep01736/full/srep01736.html' class='external' target='_blank'>http://www.nature.com/srep/2013/130426/srep01736/full/srep01736.html</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Threshold-Limited Spreading in Social Networks with Multiple Initiators</TD>
+                              <TD class='link'><a href='http://www.nature.com/srep/2013/130731/srep02330/full/srep02330.html' class='external' target='_blank'>http://www.nature.com/srep/2013/130731/srep02330/full/srep02330.html</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>A Local Lemma Algorithm for Dominating Sets</TD>
+                              <TD class='link'><a href='http://people.math.sc.edu/czabarka/MT_Report-6.pdf' class='external' target='_blank'>http://people.math.sc.edu/czabarka/MT_Report-6.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>On Realizations of a Joint Degree Matrix</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1302.3548' class='external' target='_blank'>http://arxiv.org/abs/1302.3548</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Connected Balanced Subgraphs in Random Regular Multigraphs Under the Configuration Model</TD>
+                              <TD class='link'><a href='http://www.combinatorialmath.ca/jcmcc/jcmcc86.html' class='external' target='_blank'>http://www.combinatorialmath.ca/jcmcc/jcmcc86.html</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Eccentricity in Trees</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1408.5865' class='external' target='_blank'>http://arxiv.org/abs/1408.5865</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Extremal Values of Ratios: Distance Problems vs. Subtree Problems in Trees II</TD>
+                              <TD class='link'><a href='http://www.sciencedirect.com/science/article/pii/S0012365X14000041' class='external' target='_blank'>http://www.sciencedirect.com/science/article/pii/S0012365X14000041</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>A New Asymptotic Enumeration Technique: The Lovasz Local Lemma</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/0905.3983' class='external' target='_blank'>http://arxiv.org/abs/0905.3983</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Mixed Orthogonal Arrays, k-dimensional M-part Sperner Multi-Families and Full Multi-Transversals</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1207.2646' class='external' target='_blank'>http://arxiv.org/abs/1207.2646</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Threshold Functions for Distinct Parts: Revisiting Erdos--Lehner</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1209.5764' class='external' target='_blank'>http://arxiv.org/abs/1209.5764</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Quest for Negative Dependency Graphs</TD>
+                              <TD class='link'><a href='http://people.math.sc.edu/lu/papers/kostyabook.pdf' class='external' target='_blank'>http://people.math.sc.edu/lu/papers/kostyabook.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Predicting Node Degree Centrality with the Node Prominence Profile</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Predicting Links in Multi-relational and Heterogeneous Networks</TD>
+                              <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6413854' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6413854</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Influence Activation Model: A New Perspective in Social Influence Analysis and Social Network Evolution</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Evaluating Link Prediction Methods</TD>
+                              <TD class='link'><a href='http://www3.nd.edu/~yyang1/papers/kais13.pdf' class='external' target='_blank'>http://www3.nd.edu/~yyang1/papers/kais13.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Vertex Collocation Profiles: Theory, Computation, and Results</TD>
+                              <TD class='link'><a href='http://www.springerplus.com/content/3/1/116' class='external' target='_blank'>http://www.springerplus.com/content/3/1/116</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Scaling Personalized Healthcare with Big Data</TD>
+                              <TD class='link'><a href='http://www.nd.edu/~nchawla/papers/bdah_1.pdf' class='external' target='_blank'>http://www.nd.edu/~nchawla/papers/bdah_1.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Improving Management of Aquatic Invasions by Integrating Shipping Network, Ecological, and Environmental Data: Data Mining for Social Good</TD>
+                              <TD class='link'><a href='https://www3.nd.edu/~nchawla/papers/kdd14a.pdf' class='external' target='_blank'>https://www3.nd.edu/~nchawla/papers/kdd14a.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Recurrent Subgraph Prediction</TD>
+                              <TD class='link'><a href='http://www3.nd.edu/~snagrech/presub.pdf' class='external' target='_blank'>http://www3.nd.edu/~snagrech/presub.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>How Long Will She Call Me? Distribution, Social Theory and Duration Prediction</TD>
+                              <TD class='link'><a href='https://www3.nd.edu/~dial/papers/duration.pdf' class='external' target='_blank'>https://www3.nd.edu/~dial/papers/duration.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Link Prediction in Coupled Networks</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Inferring User Demographics and Social Strategies in Mobile Social Networks</TD>
+                              <TD class='link'><a href='http://www3.nd.edu/~ydong1/papers/KDD14-Dong-et-al-WhoAmI-demographic-prediction.pdf' class='external' target='_blank'>http://www3.nd.edu/~ydong1/papers/KDD14-Dong-et-al-WhoAmI-demographic-prediction.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Inferring Social Status and Rich Club Effects in Enterprise Communication Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1404.3708v3.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1404.3708v3.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>University of Notre Dame<a name='University of Notre Dame'></a></TD>
+                              <TD class='title'>Disease and Medication Networks: An Insight into Disease-Drug Interactions</TD>
+                              <TD class='link'><a href='http://www.nd.edu/~nchawla/papers/bdah_2.pdf' class='external' target='_blank'>http://www.nd.edu/~nchawla/papers/bdah_2.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Scheduling a Cascade with Opposing Influences</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1311.5925' class='external' target='_blank'>http://arxiv.org/abs/1311.5925</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Bidimensional Structures: Algorithms, Combinatorics and Logic</TD>
+                              <TD class='link'><a href='http://drops.dagstuhl.de/opus/volltexte/2013/4013/' class='external' target='_blank'>http://drops.dagstuhl.de/opus/volltexte/2013/4013/</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Brief Announcement: A Game-Theoretic Model Motivated by the DARPA Network Challenge</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2486160' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2486160</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Tight Bounds for Planar Strongly Connected Steiner Subgraph with Fixed Number of Terminals (and Extensions)</TD>
+                              <TD class='link'><a href='http://epubs.siam.org/doi/pdf/10.1137/1.9781611973402.129' class='external' target='_blank'>http://epubs.siam.org/doi/pdf/10.1137/1.9781611973402.129</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Fixed-Parameter and Approximation Algorithms: A New Look</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-319-03898-8_11#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-319-03898-8_11#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>How to Influence People with Partial Incentives</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?doid=2566486.2568039' class='external' target='_blank'>http://dl.acm.org/citation.cfm?doid=2566486.2568039</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>PREVE: A Policy Recommendation Engine based on Vector Equilibria in Multiplayer Games</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>PREVE: A Policy Recommendation Engine Based on Vector Equilibria Applied to Reducing LeT's Attacks</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>A Polynomial-Time Approximation Scheme for Planar Multiway Cut</TD>
+                              <TD class='link'><a href='http://mhbateni.com/academic/pubs/multiwaycut-10.pdf' class='external' target='_blank'>http://mhbateni.com/academic/pubs/multiwaycut-10.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>How Effectively Can We Form Opinions</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>The Polarizing Effect of Network Influences</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>The Prize-Collecting Steiner Network Problems</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-13036-6_6#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-13036-6_6#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Approximation Algorithms for Movement Repairmen</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1306.3739' class='external' target='_blank'>http://arxiv.org/abs/1306.3739</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>LP Rounding for k-Centers with Non-uniform Hard Capacities</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1208.3054' class='external' target='_blank'>http://arxiv.org/abs/1208.3054</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Online Node-Weighted Steiner Forest and Extensions via Disk Paintings</TD>
+                              <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6686192' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6686192</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Basic Network Creation Games</TD>
+                              <TD class='link'><a href='http://www.tau.ac.il/~nogaa/PDFS/adhl4.pdf' class='external' target='_blank'>http://www.tau.ac.il/~nogaa/PDFS/adhl4.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Minimizing Movement: Fixed-Parameter Tractability</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007/978-3-642-04128-0_64#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007/978-3-642-04128-0_64#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Scheduling to Minimize Gaps and Power Consumption</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs10951-012-0309-6#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs10951-012-0309-6#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Improved Approximation Algorithms for (Budgeted) Node-weighted Steiner Problems</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-39206-1_8' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-39206-1_8</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Designing FPT Algorithms for Cut Problems Using Randomized Contractions</TD>
+                              <TD class='link'><a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6375324&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6375324&tag=1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Directed Subset Feedback Vertex Set Is Fixed-Parameter Tractable</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-31594-7_20' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-31594-7_20</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Approximability of the Subset Sum Reconfiguration Problem</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs10878-012-9562-z#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs10878-012-9562-z#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>O(1)-Approximations for Maximum Movement Problems</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-22935-0_6#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-22935-0_6#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Polynomial-Time Approximation Schemes for Subset-Connectivity Problems in Bounded-Genus Graphs</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs00453-012-9662-2#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs00453-012-9662-2#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Fixed-Parameter Tractability of Directed Multiway Cut Parameterized by the Size of the Cutset</TD>
+                              <TD class='link'><a href='http://siam.omnibooksonline.com/2012SODA/data/papers/010.pdf' class='external' target='_blank'>http://siam.omnibooksonline.com/2012SODA/data/papers/010.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Assignment Problem in Content Distribution Networks: Unsplittable Hard-Capacitated Facility Location</TD>
+                              <TD class='link'><a href='http://epubs.siam.org/doi/pdf/10.1137/1.9781611973068.88' class='external' target='_blank'>http://epubs.siam.org/doi/pdf/10.1137/1.9781611973068.88</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Euclidean Prize-Collecting Steiner Forest</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs00453-011-9491-8#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs00453-011-9491-8#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Local Search Algorithms for the Red-Blue Median Problem</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs00453-011-9547-9#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs00453-011-9547-9#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Swapping Labeled Tokens on Graphs</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-319-07890-8_31#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-319-07890-8_31#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>On Streaming and Communication Complexity of the Set Cover Problem</TD>
+                              <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-662-45174-8_33' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-662-45174-8_33</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>On a Local Protocol for Concurrent File Transfers</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs00224-013-9500-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs00224-013-9500-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Efficient and Practical Resource Block Allocation for LTE-Based D2D Network via Graph Coloring</TD>
+                              <TD class='link'><a href='http://link.springer.com/article/10.1007%2Fs11276-013-0626-5#page-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs11276-013-0626-5#page-1</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Streaming Algorithms for Estimating the Matching Size in Planar Graphs and Beyond</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Parameterized Streaming: Maximal Matching and Vertex Cover</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Network Cournot Competition</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>Randomized Revenue Monotone Mechanisms for Online Advertising</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>MIT<a name='MIT'></a></TD>
+                              <TD class='title'>A Tight Algorithm for Strongly Connected Steiner Subgraph on Two Terminals with Demands</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Popularity Versus Similarity in Growing Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1106.0286.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1106.0286.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Network Cosmology</TD>
+                              <TD class='link'><a href='http://dx.doi.org/10.1038/srep00793' class='external' target='_blank'>http://dx.doi.org/10.1038/srep00793</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Duality Between Equilibrium and Growing Networks</TD>
+                              <TD class='link'><a href='http://dx.doi.org/10.1103/PhysRevE.88.022808' class='external' target='_blank'>http://dx.doi.org/10.1103/PhysRevE.88.022808</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Entropy Distribution and Condensation in Random Networks with a Given Degree Distribution</TD>
+                              <TD class='link'><a href='http://dx.doi.org/10.1103/PhysRevE.89.062807' class='external' target='_blank'>http://dx.doi.org/10.1103/PhysRevE.89.062807</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Network Mapping by Replaying Hyperbolic Growth</TD>
+                              <TD class='link'><a href='http://dx.doi.org/10.1109/TNET.2013.2294052' class='external' target='_blank'>http://dx.doi.org/10.1109/TNET.2013.2294052</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Cosmological Networks</TD>
+                              <TD class='link'><a href='http://arxiv.org/abs/1310.6272' class='external' target='_blank'>http://arxiv.org/abs/1310.6272</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Hyperbolic Graph Generator</TD>
+                              <TD class='link'><a href='http://named-data.github.io/Hyperbolic-Graph-Generator/' class='external' target='_blank'>http://named-data.github.io/Hyperbolic-Graph-Generator/</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UCSD<a name='UCSD'></a>, NEU<a name='NEU'></a></TD>
+                              <TD class='title'>Analyzing Social Divisions Using Cell Phone Data</TD>
+                              <TD class='link'>Not Yet Published</TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>On the Bursty Evolution of Online Social Networks</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2392623' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2392623</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Beyond Social Graphs: User Interactions in Online Social Networks and their Implications</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2382620' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2382620</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Hewlett-Packard Labs<a name='Hewlett-Packard Labs'></a></TD>
+                              <TD class='title'>Using R for Iterative and Incremental Processing</TD>
+                              <TD class='link'><a href='https://www.usenix.org/conference/hotcloud12/workshop-program/presentation/venkataraman' class='external' target='_blank'>https://www.usenix.org/conference/hotcloud12/workshop-program/presentation/venkataraman</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Multi-scale Dynamics in a Massive Online Social Network</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2398795' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2398795</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Social Turing Tests: Crowdsourcing Sybil Detection</TD>
+                              <TD class='link'><a href='http://arxiv.org/pdf/1205.3856v2' class='external' target='_blank'>http://arxiv.org/pdf/1205.3856v2</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Understanding Latent Interactions in Online Social Networks</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2517040' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2517040</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>Hewlett-Packard Labs<a name='Hewlett-Packard Labs'></a></TD>
+                              <TD class='title'>Presto: Distributed Machine Learning and Graph Processing with Sparse Matrices</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2465371' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2465371</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Wisdom in the Social Crowd: an Analysis of Quora</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2488506' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2488506</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Practical Conflict Graphs for Dynamic Spectrum Distribution</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2465545' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2465545</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>You are How You Click: Clickstream Analysis for Sybil Detection</TD>
+                              <TD class='link'><a href='https://www.usenix.org/conference/usenixsecurity13/technical-sessions/presentation/wang' class='external' target='_blank'>https://www.usenix.org/conference/usenixsecurity13/technical-sessions/presentation/wang</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Follow the Green: Growth and Dynamics in Twitter Follower Markets</TD>
+                              <TD class='link'><a href='http://conferences.sigcomm.org/imc/2013/papers/imc018-stringhiniA.pdf' class='external' target='_blank'>http://conferences.sigcomm.org/imc/2013/papers/imc018-stringhiniA.pdf</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>Inferring User Interests from Tweet Times</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2512960' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2512960</a></TD>
+                          </TR>
+                          <TR>
+                              <TD class='team'>UC - Santa Barbara<a name='UC - Santa Barbara'></a></TD>
+                              <TD class='title'>On the Validity of Geosocial Mobility Traces</TD>
+                              <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2535786' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2535786</a></TD>
+                          </TR>
+                      </tbody>
+                  </table>
+                  </tbody>
+                  </table>
+                  <br>
+              </div>
+          </div>
+      </div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>

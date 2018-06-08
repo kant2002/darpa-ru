@@ -1,0 +1,945 @@
+
+  <!DOCTYPE html>
+  <html lang='en'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/robust-atuomatic-transcription-of-speech' class='programlink'>Robust Automatic Transcription of Speech (RATS)</a></h2>
+<div class='left-paragraph'><p>The Robust Automatic Transcription of Speech (RATS) program will create algorithms and software for performing the following tasks on potentially speech-containing signals received over communication channels that are extremely noisy and/or highly distorted: speech activity detection, language identification, speaker identification, and key word spotting.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-david-doermann' class='programmanagerlink'>Dr. David Doermann</a></p><p>Contact: <a href='mailto:david.doermann@darpa.mil'>david.doermann@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs1'>Publications</a></li></ul><div id='publications'><div id='tabs1'><input class='search' placeholder='Search' id='search1'/><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><TR>
+  <TD class='team'>LDC<a name='LDC'></a></TD>
+<TD class='title'>Annotation Trees: LDC's Customizable, Extensible, Scalable Annotation Infrastructure</TD>  <TD class='link'><a href='https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-annotation-trees.pdf' class='external' target='_blank'>https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-annotation-trees.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>White Listing and Score Normalization for Keyword Spotting of Noisy Speech</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>Improvements in Language Identification on the RATS Noisy Speech Corpus</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>Infinite Structured Support Vector Machines in Speech Recognition</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>An Explicit Independence Constraint for Factorised Adaptation in Speech Recognition</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>A Confidence-Based Approach for Improving Keyword Hypothesis Scores</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>TANDEM System Adaptation Using Multiple Linear Feature Transforms</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>Model-Based Approaches for Degraded Channel Modelling in Robust ASR</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>Using Sub-Word-Level Information for Confidence Estimation with Conditional Random Field Models</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>Model-Based Approaches to Adaptive Training in Reverberant Environments</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) University of Cambridge<a name='(Team BBN) University of Cambridge'></a></TD>
+<TD class='title'>Factor Analysis Based VTS Discriminative Adaptive Training</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a></TD>
+<TD class='title'>Pairwise Discriminative Speaker Verification in the I -Vector Space</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6466371&userType=inst&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6466371&userType=inst&tag=1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a>, Brno University of Technology<a name='Brno University of Technology'></a>, MIT<a name='MIT'></a>, Johns Hopkins University<a name='Johns Hopkins University'></a>, University of Maryland<a name='University of Maryland'></a>, Aalborg University<a name='Aalborg University'></a></TD>
+<TD class='title'>Probabilistic Linear Discriminant Analysis Of I-Vector Posterior Distributions</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2013/cumani_icassp2013_0007644.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2013/cumani_icassp2013_0007644.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a></TD>
+<TD class='title'>Developing a Speaker Identification System for the DARPA RATS Project</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2013/plchot_icassp2013_0006768.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2013/plchot_icassp2013_0006768.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a>, Department of Electronics and Telecommunications<a name='Department of Electronics and Telecommunications'></a>, NTNU<a name='NTNU'></a>, Politecnico di Torino<a name='Politecnico di Torino'></a></TD>
+<TD class='title'>Regularized Subspace n-Gram Model for Phonotactic iVector Extraction</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2013/soufifar_interspeech2013_IS131171.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2013/soufifar_interspeech2013_IS131171.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a>, Politecnico di Torino<a name='Politecnico di Torino'></a>, AGNITIO<a name='AGNITIO'></a></TD>
+<TD class='title'>Description and Analysis of the Brno276 system for LRE2011</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2012/brummer_odyssey2012_216-223-40.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2012/brummer_odyssey2012_216-223-40.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a>, Universidad Politcnica de Madrid<a name='Universidad Politcnica de Madrid'></a></TD>
+<TD class='title'>Phonotactic Language Recognition using i-Vectors and Phoneme Posteriogram Counts</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2012/d_haro_interspeech2012_558_pp1_4.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2012/d_haro_interspeech2012_558_pp1_4.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a>, MIT<a name='MIT'></a></TD>
+<TD class='title'>Patrol Team Language Identification System for DARPA RATS P1 Evaluation</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2012/matejka_interspeech2012_1295_pp1_4.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2012/matejka_interspeech2012_1295_pp1_4.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a>, University of Maryland<a name='University of Maryland'></a></TD>
+<TD class='title'>Developing a Speech Activity Detection System for the DARPA RATS Program</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2012/ng_interspeech2012_1052_pp_1_4.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2012/ng_interspeech2012_1052_pp_1_4.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) Brno University of Technology<a name='(Team BBN) Brno University of Technology'></a></TD>
+<TD class='title'>Speaker Vectors from Subspace Gaussian Mixture Model as Complementary Features for Language Identification</TD>  <TD class='link'><a href='http://www.fit.vutbr.cz/research/groups/speech/publi/2012/plchot_odyssey2012_330-333-41.pdf' class='external' target='_blank'>http://www.fit.vutbr.cz/research/groups/speech/publi/2012/plchot_odyssey2012_330-333-41.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Long, Deep and Wide Neural Nets for Dealing with Unexpected Noise in Machine Recognition of Speech</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-40585-3_2#page-2' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-40585-3_2#page-2</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Multistream Recognition of Speech: Dealing With Unknown Unknowns</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6428587&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6428587&tag=1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) JHU<a name='(Team IBM) JHU'></a></TD>
+<TD class='title'>Robust Speaker Recognition Using Spectro-Temporal Autoregressive Models</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~sriram/papers/papers/plp2_spkr.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~sriram/papers/papers/plp2_spkr.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) LSCP<a name='(Team IBM) LSCP'></a>, ENS/EHESS/CNRS<a name='ENS/EHESS/CNRS'></a>, INRIA/ENS/CNRS<a name='INRIA/ENS/CNRS'></a>, Johns Hopkins University<a name='Johns Hopkins University'></a></TD>
+<TD class='title'>Evaluating Speech Features with the Minimal-Pair ABX task: Analysis of the Classical MFC/PLP Pipeline</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~ajansen/papers/IS2013c.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~ajansen/papers/IS2013c.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Multi-Stream Recognition of Noisy Speech with Performance Monitoring</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~variani/MSPM_Interspeech_2013.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~variani/MSPM_Interspeech_2013.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Text-to-Speech Inspired Duration Modeling for Improved Whole-Word Acoustic Models</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~ajansen/papers/IS2013a.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~ajansen/papers/IS2013a.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Weak Top-Down Constraints For Unsupervised Acoustic Model Training</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~samuel/pdfs/wk_const.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~samuel/pdfs/wk_const.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Deep Neural Network Features and Semi-Supervised Training for Low Resource Speech Recognition</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~samuel/pdfs/dnn_semisup_lr.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~samuel/pdfs/dnn_semisup_lr.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Effect Of Filter Bandwidth and Spectral Sampling Rate of Analysis Filterbank on Automatic Phoneme Recognition</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6639044' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6639044</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Frequency Offset Correction in Speech Without Detecting Pitch</TD>  <TD class='link'><a href='http://hltcoe.jhu.edu/uploads/publications/papers/14672_slides.pdf' class='external' target='_blank'>http://hltcoe.jhu.edu/uploads/publications/papers/14672_slides.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>A Summary Of The 2012 JHU CLSP Workshop on Zero Resource Speech Technologies and Models of Early Language Acquisition</TD>  <TD class='link'><a href='http://www.lscp.net/persons/dupoux/papers/Jansen_DGJKCFHMRSCMVBBCDFHLLNPRST_zero_resource_workshop.ICASSP.pdf' class='external' target='_blank'>http://www.lscp.net/persons/dupoux/papers/Jansen_DGJKCFHMRSCMVBBCDFHLLNPRST_zero_resource_workshop.ICASSP.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Mean Temporal Distance: Predicting ASR Error from Temporal Properties of Speech Signal</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639105&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6639105' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639105&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6639105</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Filter-Bank Optimization for Frequency Domain Linear Prediction</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639040&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6639040' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639040&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6639040</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Estimating Classifier Performance in Unknown Noise</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~variani/ECPUN_Interspeech_2012.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~variani/ECPUN_Interspeech_2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Data-Driven Posterior Features for Low Resource Speech Recognition Applications</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~ajansen/papers/IS2012f.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~ajansen/papers/IS2012f.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Phone Recognition in Critical Bands Using Sub-Band Temporal Modulations</TD>  <TD class='link'><a href='http://www.bibsonomy.org/bibtex/2c299b5bdd7dea9bcf9905568c4dbcaaf/dblp' class='external' target='_blank'>http://www.bibsonomy.org/bibtex/2c299b5bdd7dea9bcf9905568c4dbcaaf/dblp</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>MAP Estimation of Whole-Word Acoustic Models with Dictionary Priors</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~ajansen/papers/IS2012c.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~ajansen/papers/IS2012c.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Inverting the Point Process Model for Fast Phonetic Keyword Search</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~ajansen/papers/IS2012d.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~ajansen/papers/IS2012d.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Analysis of Temporal Resolution in Frequency Domain Linear Prediction</TD>  <TD class='link'><a href='http://www.bibsonomy.org/bibtex/21d0a44e428a71b13ffd600631738ecc3/dblp' class='external' target='_blank'>http://www.bibsonomy.org/bibtex/21d0a44e428a71b13ffd600631738ecc3/dblp</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team BBN) JHU<a name='(Team BBN) JHU'></a></TD>
+<TD class='title'>Multilingual MLP Features For Low-Resource LVCSR Systems</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~samuel/pdfs/multilingual.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~samuel/pdfs/multilingual.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></TD>
+<TD class='title'>Automatic Intelligibility Assessment of Pathologic Speech in Head and Neck Cancer Based on Auditory-Inspired Spectro-Temporal Modulations</TD>  <TD class='link'><a href='http://terpconnect.umd.edu/~zxinhui/Interspeech2011/InterSpeech12_SPEECH_PATHOLOGY_head_and_neck_cancer.pdf' class='external' target='_blank'>http://terpconnect.umd.edu/~zxinhui/Interspeech2011/InterSpeech12_SPEECH_PATHOLOGY_head_and_neck_cancer.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) MIT<a name='(Team IBM) MIT'></a></TD>
+<TD class='title'>Bayesian Distance Metric Learning on i-Vector for Speaker Verification</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) MIT<a name='(Team IBM) MIT'></a></TD>
+<TD class='title'>Gaussian Mixture Model Weight Supervector Decomposition and Adaptation</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>The IBM Speech Activity Detection System for the DARPA RATS Program</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~sriram/papers/papers/inter2013.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~sriram/papers/papers/inter2013.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Using Polynomial Kernel Support Vector Machines for Speaker Verification, in IEEE Letters</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6557422' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6557422</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>The IBM RATS Phase II Speaker Recognition System: Overview and Analysis, in Proc. of Interspeech</TD>  <TD class='link'><a href='http://www.interspeech2013.org/' class='external' target='_blank'>http://www.interspeech2013.org/</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Unifying PLDA and Polynomial Kernel SVMs, in Proc. of IEEE ICASSP</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639161&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6639161' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639161&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6639161</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Frame-Based Phonotactic Language Identification, SLT</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424240&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6424240' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424240&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6424240</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Noisy Channel Adaptation in Language Identification, SLT</TD>  <TD class='link'><a href='http://old-site.clsp.jhu.edu/~sriram/papers/papers/slt.pdf' class='external' target='_blank'>http://old-site.clsp.jhu.edu/~sriram/papers/papers/slt.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>On the Use of Non-Linear Polynomial Kernel SVMs in Language Recognition, Interspeech</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Speech Activity Detection for Noisy Data Using Adaptation Techniques, Interspeech</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Unsupervised Channel Adaptation for Language Identification Using Co-Training, ICASSP</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6638990&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6638990' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6638990&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6638990</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Trap Language Identification System  for RATS Phase II Evaluation, Interspeech</TD>  <TD class='link'><a href='http://www.interspeech2013.org' class='external' target='_blank'>http://www.interspeech2013.org</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Enhancing Frequency Shifted Speech Signals in Single Side Band Communication, IEEE Signal Processing Letters</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6627984&url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel7%2F97%2F6615960%2F06627984.pdf%3Farnumber%3D6627984' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6627984&url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel7%2F97%2F6615960%2F06627984.pdf%3Farnumber%3D6627984</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a>, Technical University of Crete<a name='Technical University of Crete'></a></TD>
+<TD class='title'>Speaker Verification using Simplified and Supervised I-Vector Modeling</TD>  <TD class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/604' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/604</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a></TD>
+<TD class='title'>Multi-band Long-term Signal Variability Features for Robust Voice Activity Detection</TD>  <TD class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/633' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/633</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a></TD>
+<TD class='title'>TRAP Language Identification System for RATS Phase II Evaluation</TD>  <TD class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/617' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/617</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a></TD>
+<TD class='title'>A Robust Frontend for VAD: Exploiting Contextual, Discriminative and Spectral Cues of Human Voice</TD>  <TD class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/624' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/624</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a></TD>
+<TD class='title'>Simplified Supervised I-vector Modeling and Sparse Representation with Application to Robust Language Recognition</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a></TD>
+<TD class='title'>A Study on the Effect of Prosodic Emphasis Transfer on Overall Speech Translation Quality</TD>  <TD class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/607' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/607</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team IBM) University of Southern California<a name='(Team IBM) University of Southern California'></a></TD>
+<TD class='title'>Spectro-Temporal Directional Derivative Features for Automatic Speech Recognition</TD>  <TD class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/621' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/621</a></TD>
+</TR>
+<TR>
+  <TD class='team'>LDC<a name='LDC'></a></TD>
+<TD class='title'>LDC Forced Aligner</TD>  <TD class='link'><a href='https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-ldc-forced-aligner.pdf' class='external' target='_blank'>https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-ldc-forced-aligner.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>LDC<a name='LDC'></a></TD>
+<TD class='title'>The RATS Radio Traffic Collection System</TD>  <TD class='link'><a href='https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/odyssey2012-rats-collection-system.pdf' class='external' target='_blank'>https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/odyssey2012-rats-collection-system.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of California - Los Angeles<a name='(Team SRI) University of California - Los Angeles'></a></TD>
+<TD class='title'>A Novel Approach to Soft-Mask Estimation and Log-Spectral Enhancement for Robust Speech Recognition</TD>  <TD class='link'><a href='http://www.ee.ucla.edu/~spapl/paper/ICASSP_revised.pdf' class='external' target='_blank'>http://www.ee.ucla.edu/~spapl/paper/ICASSP_revised.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of California - Los Angeles<a name='(Team SRI) University of California - Los Angeles'></a></TD>
+<TD class='title'>A Pitch-Based Spectral Enhancement Technique for Robust Speech Processing</TD>  <TD class='link'><a href='http://www.ee.ucla.edu/~spapl/paper/InterSpeech2013_revised_Kaewtip.pdf' class='external' target='_blank'>http://www.ee.ucla.edu/~spapl/paper/InterSpeech2013_revised_Kaewtip.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>Adaptive Gaussian Backend for Robust Language Identification</TD>  <TD class='link'><a href='http://www.speech.sri.com/people/aaron/papers/rats_agb.pdf' class='external' target='_blank'>http://www.speech.sri.com/people/aaron/papers/rats_agb.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>All For One: Feature Combination For Highly Channel-Degraded Speech Activity Detection</TD>  <TD class='link'><a href='http://www.speech.sri.com/pubs/papers/Grac1308:One//document.pdf' class='external' target='_blank'>http://www.speech.sri.com/pubs/papers/Grac1308:One//document.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) Incheon National University<a name='(Team SRI) Incheon National University'></a>, University of Texas - Dallas<a name='University of Texas - Dallas'></a></TD>
+<TD class='title'>An Advanced Feature Compensation Method Employing Acoustic Model with Phonetically Constrained Structure</TD>  <TD class='link'><a href='http://www.utdallas.edu/~john.hansen/Publications/CP-ICASSP13-KimHansen-RobustASR-0007083.pdf' class='external' target='_blank'>http://www.utdallas.edu/~john.hansen/Publications/CP-ICASSP13-KimHansen-RobustASR-0007083.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>Bilinear Factor Analysis for iVector Based Speaker Verification</TD>  <TD class='link'><a href='http://www.speech.sri.com/people/yunlei/papers/interspeech2012-BLFA.pdf' class='external' target='_blank'>http://www.speech.sri.com/people/yunlei/papers/interspeech2012-BLFA.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Confidence-Based Scoring: A Useful Diagnostic Tool for Detection Tasks</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3598' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3598</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>Damped Oscillator Cepstral Coefficients for Robust Speech Recognition</TD>  <TD class='link'><a href='http://www-speech.sri.com/pubs/papers/Mitr13:Damped//document.pdf' class='external' target='_blank'>http://www-speech.sri.com/pubs/papers/Mitr13:Damped//document.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>Discriminatively Trained Phoneme Confusion Model for Keyword Spotting</TD>  <TD class='link'><a href='http://www.speech.sri.com/papers/interspeech2012-karanasou-kws.pdf' class='external' target='_blank'>http://www.speech.sri.com/papers/interspeech2012-karanasou-kws.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Easy Does It:  Robust Spectro-Temporal Many-Stream ASR Without Fine Tuning Streams</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3242' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3242</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Factor Analysis of Acoustic Features Using a Mixture of Probabilistic Principal Component Analyzers for Robust Speaker Verification</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Feature Compensation Employing Online GMM Adaptation for Speech Recognition in Unknown Severely Adverse Environments</TD>  <TD class='link'><a href='http://www.utdallas.edu/~john.hansen/Publications/CP-ICASSP12-FeatureCompGMM-ASR-0004121.pdf' class='external' target='_blank'>http://www.utdallas.edu/~john.hansen/Publications/CP-ICASSP12-FeatureCompGMM-ASR-0004121.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Gaussian Map based Acoustic Model Adaptation Using Untranscribed Data for Speech Recognition in Severely Adverse Environments</TD>  <TD class='link'><a href='http://www.utdallas.edu/~john.hansen/Publications/CP-Interspeech12-KimHansen-GaussianMAP-ASR-RATS-Wed-P7b-02-Sept2012.pdf' class='external' target='_blank'>http://www.utdallas.edu/~john.hansen/Publications/CP-Interspeech12-KimHansen-GaussianMAP-ASR-RATS-Wed-P7b-02-Sept2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) CMU<a name='(Team SRI) CMU'></a></TD>
+<TD class='title'>Histogram-Based Subband Power Warping and Spectral Averaging for Robust Speech Recognition Under Matched and Multistyle Training</TD>  <TD class='link'><a href='http://www.cs.cmu.edu/~robust/Papers/HarvillaStern12.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~robust/Papers/HarvillaStern12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Impact of Noise Reduction and Spectrum Estimation on Noise Robust Speaker Identification</TD>  <TD class='link'><a href='http://crss.utdallas.edu/Publications/godin2013sid.pdf' class='external' target='_blank'>http://crss.utdallas.edu/Publications/godin2013sid.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>Improving Language Identification Robustness to Highly Channel-Degraded Speech through Multiple System Fusion</TD>  <TD class='link'><a href='http://www.speech.sri.com/people/aaron/papers/rats_lid.pdf' class='external' target='_blank'>http://www.speech.sri.com/people/aaron/papers/rats_lid.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Informative Spectro-Temporal Bottleneck Features for Noise-Robust Speech Recognition</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3442' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3442</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Longer Features: They Do a Speech Detector Good</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3363' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3363</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Low Complexity Spectral Imputation for Noise Robust Speech Recognition</TD>  <TD class='link'><a href='http://www.seas.ucla.edu/spapl/paper/van%20Hout_MSThesis.pdf' class='external' target='_blank'>http://www.seas.ucla.edu/spapl/paper/van%20Hout_MSThesis.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Mean Hilbert Envelope Coefficients (MHEC) for Robust Speaker Recognition</TD>  <TD class='link'><a href='http://crss.utdallas.edu/Publications/Sadjadi2012.pdf' class='external' target='_blank'>http://crss.utdallas.edu/Publications/Sadjadi2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of California - Los Angeles<a name='(Team SRI) University of California - Los Angeles'></a></TD>
+<TD class='title'>Modulation Features for Noise Robust Speaker Identification</TD>  <TD class='link'><a href='http://www.speech.sri.com/papers/vmitra_MMeDuSA_Interspeech2013.pdf' class='external' target='_blank'>http://www.speech.sri.com/papers/vmitra_MMeDuSA_Interspeech2013.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of California - Los Angeles<a name='(Team SRI) University of California - Los Angeles'></a></TD>
+<TD class='title'>Multi-Band Summary Correlogram-Based Pitch Detection for Noisy Speech</TD>  <TD class='link'><a href='http://www.ee.ucla.edu/~spapl/paper/Speechcom_Tan.pdf' class='external' target='_blank'>http://www.ee.ucla.edu/~spapl/paper/Speechcom_Tan.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) Columbia University<a name='(Team SRI) Columbia University'></a>, International Computer Science Institute<a name='International Computer Science Institute'></a></TD>
+<TD class='title'>Noise Robust Pitch Tracking by Subband Autocorrelation Classification</TD>  <TD class='link'><a href='http://www.ee.columbia.edu/~dpwe/pubs/LeeEllis12-SAcC.pdf' class='external' target='_blank'>http://www.ee.columbia.edu/~dpwe/pubs/LeeEllis12-SAcC.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI<a name='SRI'></a></TD>
+<TD class='title'>Normalized Amplitude Modulation Features for Large Vocabulary Noise-Robust Speech Recognition</TD>  <TD class='link'><a href='http://www.speech.sri.com/papers/ICASSP2012_vmitra_TEO_LVCSR.pdf' class='external' target='_blank'>http://www.speech.sri.com/papers/ICASSP2012_vmitra_TEO_LVCSR.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Phoneme Class Based Adaptation for Mismatch Acoustic Modeling of Distant Noisy Speech</TD>  <TD class='link'><a href='http://www.utdallas.edu/~john.hansen/Publications/CP-Interspeech12-SeckinHansen-PCBA-KWS-DistantSpeech-Wed-P7b-06-Sept2012.pdf' class='external' target='_blank'>http://www.utdallas.edu/~john.hansen/Publications/CP-Interspeech12-SeckinHansen-PCBA-KWS-DistantSpeech-Wed-P7b-06-Sept2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) CMU<a name='(Team SRI) CMU'></a>, Microsoft<a name='Microsoft'></a></TD>
+<TD class='title'>Power-Normalized Cepstral Coefficients (PNCC) for Robust Speech Recognition</TD>  <TD class='link'><a href='http://www.cs.cmu.edu/~robust/Papers/OnlinePNCC_V25.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~robust/Papers/OnlinePNCC_V25.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Robust Front-End Processing For Speaker Identification Over Extremely Degraded Communication Channels</TD>  <TD class='link'><a href='http://crss.utdallas.edu/Publications/sadjadi2013front.pdf' class='external' target='_blank'>http://crss.utdallas.edu/Publications/sadjadi2013front.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Spectro-Temporal Features for Robust Speech Recognition Using Power-Law Nonlinearity and Power-Bias Subtraction</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3597' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3597</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Spectro-Temporal Gabor Features for Speaker Recognition</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3239' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3239</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Speech Activity Detection: An Economics Approach</TD>  <TD class='link'><a href='https://www.icsi.berkeley.edu/icsi/publication_details?n=3599' class='external' target='_blank'>https://www.icsi.berkeley.edu/icsi/publication_details?n=3599</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) USC Berkeley<a name='(Team SRI) USC Berkeley'></a>, ICSI<a name='ICSI'></a></TD>
+<TD class='title'>Strategies for High Accuracy Keyword Detection in Noisy Channels</TD>  <TD class='link'><a href='http://www.speech.sri.com/pubs/papers/Mand1308:Strategies//document.pdf' class='external' target='_blank'>http://www.speech.sri.com/pubs/papers/Mand1308:Strategies//document.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></TD>
+<TD class='title'>Unsupervised Speech Activity Detection using Voicing Measures and Perceptual Spectral Flux</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6403507' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6403507</a></TD>
+</TR>
+<TR>
+  <TD class='team'><a name=''></a></TD>
+<TD class='title'>Efficient Lattice Rescoring Using Recurrent Neural Network Language Models</TD>  <TD class='link'><a href='http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html' class='external' target='_blank'>http://mi.eng.cam.ac.uk/~mjfg/RATS/index.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'><a name=''></a></TD>
+<TD class='title'>On the Use of i-Vector Posterior Distributions in Probabilistic Linear Discriminant Analysis</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=06748853' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=06748853</a></TD>
+</TR>
+<TR>
+  <TD class='team'><a name=''></a></TD>
+<TD class='title'>Non-negative Factor Analysis of Gaussian Mixture Model Weight Adaption for Language and Dialect Recognition</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'><a name=''></a></TD>
+<TD class='title'>GMM Weights Adaptation Based on Subspace Approaches for Speaker Verification</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'><a name=''></a></TD>
+<TD class='title'>Unscented Transform For i-Vector-based Noisy Speaker Recognition</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>

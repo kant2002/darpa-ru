@@ -1,0 +1,1067 @@
+﻿
+  <!DOCTYPE html>
+  <html lang='en'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/programming-computation-on-encrypted-data' class='programlink'>PROgramming Computation on EncryptEd Data (PROCEED)</a></h2>
+<div class='left-paragraph'><p>DARPA's Programming Computation on Encrypted Data (PROCEED) program is a research effort that seeks to develop methods that allow computing with encrypted data without first decrypting that data, making it possible to compute more securely in untrusted environments.<p>
+<p class="programComplete">Program Complete</p>
+      <p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs1'>Publications</a></li></ul><div id='publications'><div id='tabs1'><input class='search' placeholder='Search' id='search1'/><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Functional Encryption for Inner Product Predicates from Learning with Errors</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/410.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/410.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Computing on Authenticated Data</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/096.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/096.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>A Domain-Specific Language for Computing on Encrypted Data</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/561.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/561.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Deterministic and Energy-Optimal Wireless Synchronization</TD>  <TD class='link'><a href='http://arxiv.org/pdf/1010.1112' class='external' target='_blank'>http://arxiv.org/pdf/1010.1112</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Standard Security Does Not Imply Security Against Selective-Opening</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/581.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/581.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Identity-Based (Lossy) Trapdoor Functions and Applications</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/479.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/479.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Program Obfuscation with Leaky Hardware</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/660.pdf' class='external' target='_blank'>https://eprint.iacr.org/2011/660.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Random Oracles in a Quantum World</TD>  <TD class='link'><a href='http://eprint.iacr.org/2010/428.pdf' class='external' target='_blank'>http://eprint.iacr.org/2010/428.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Homomorphic Signatures for Polynomial Functions</TD>  <TD class='link'><a href='http://theory.stanford.edu/~dfreeman/papers/homsigs.pdf' class='external' target='_blank'>http://theory.stanford.edu/~dfreeman/papers/homsigs.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Targeted Malleability: Homomorphic Encryption for Restricted Computations</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/311.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/311.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>On Sum Coloring and Sum Multi-coloring for Restricted Families of Graphs</TD>  <TD class='link'><a href='http://www.cs.toronto.edu/~bor/2420f10/stacs.pdf' class='external' target='_blank'>http://www.cs.toronto.edu/~bor/2420f10/stacs.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Multiparty Computation Secure Against Continual Memory Leakage</TD>  <TD class='link'><a href='http://www.cs.technion.ac.il/~elette/LR-MPC-STOC12.pdf' class='external' target='_blank'>http://www.cs.technion.ac.il/~elette/LR-MPC-STOC12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Leakage-Resilient Coin Tossing</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/291' class='external' target='_blank'>https://eprint.iacr.org/2011/291</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Fully Homomorphic Encryption without Bootstrapping</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/277.pdf' class='external' target='_blank'>https://eprint.iacr.org/2011/277.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Fully Homomorphic Encryption without Modulus Switching from Classical GapSVP</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/078.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/078.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Position-Based Quantum Cryptography: Impossibility and Constructions</TD>  <TD class='link'><a href='https://eprint.iacr.org/2010/275.pdf' class='external' target='_blank'>https://eprint.iacr.org/2010/275.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Simultaneously Resettable Arguments of Knowledge</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-28914-9_30#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-28914-9_30#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>The Randomness Complexity of Parallel Repetition</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~rafael/papers/rand-para.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~rafael/papers/rand-para.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>The Knowledge Tightness of Parallel Zero-Knowledge</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~chung/download/parallelZKKnowledge.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~chung/download/parallelZKKnowledge.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>SIPHER: Scalable Implementation of Primitives for Homomorphic EncRyption - FPGA implementation using Simulink</TD>  <TD class='link'><a href='http://q.hscott.net/reads/HPEC11_Cousins.pdf' class='external' target='_blank'>http://q.hscott.net/reads/HPEC11_Cousins.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>An Update on Scalable Implementation of Primitives for Homomorphic EncRyption - FPGA implementation using Simulink</TD>  <TD class='link'><a href='http://www.bibsonomy.org/bibtex/2f384310febd0bacdd84a0920d68d3f2b/dblp' class='external' target='_blank'>http://www.bibsonomy.org/bibtex/2f384310febd0bacdd84a0920d68d3f2b/dblp</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Resettable Cryptography in Constant Rounds - The Case of Zero Knowledge</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/408.pdf' class='external' target='_blank'>https://eprint.iacr.org/2011/408.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Leakage-Resilient Zero Knowledge</TD>  <TD class='link'><a href='http://www.cs.ucla.edu/~sanjamg/Sanjam%20Garg_files/GJS11.pdf' class='external' target='_blank'>http://www.cs.ucla.edu/~sanjamg/Sanjam%20Garg_files/GJS11.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Resettable Statistical Zero Knowledge</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/457.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/457.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Round Optimal Blind Signatures</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/264.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/264.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Efficient and Explicit Coding for Interactive Communication</TD>  <TD class='link'><a href='http://people.csail.mit.edu/moitra/docs/treecode.pdf' class='external' target='_blank'>http://people.csail.mit.edu/moitra/docs/treecode.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Fully Homomorphic Encryption without Squashing Using Depth-3 Arithmetic Circuits</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/279' class='external' target='_blank'>https://eprint.iacr.org/2011/279</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>FHE with Polylog Overhead</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/566' class='external' target='_blank'>http://eprint.iacr.org/2011/566</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Better Bootstrapping in Fully Homomorphic Encryption</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/680.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/680.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Ring Switching in BGV-Style Homomorphic Encryption</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-32928-9_2#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-32928-9_2#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Homomorphic Evaluation of the AES circuit</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/099.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/099.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Bounded-Collusion IBE from Key Homomorphism</TD>  <TD class='link'><a href='http://web.mit.edu/dwilson/www/papers/glw.pdf' class='external' target='_blank'>http://web.mit.edu/dwilson/www/papers/glw.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Outsourcing the Decryption of ABE Ciphertexts</TD>  <TD class='link'><a href='http://static.usenix.org/event/sec11/tech/full_papers/Green.pdf' class='external' target='_blank'>http://static.usenix.org/event/sec11/tech/full_papers/Green.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Lossy Encryption: Constructions from General Assumptions and Efficient Selective Opening Chosen Ciphertext Security</TD>  <TD class='link'><a href='https://eprint.iacr.org/2009/088' class='external' target='_blank'>https://eprint.iacr.org/2009/088</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Public Key Locally Decodable Codes with Short Keys</TD>  <TD class='link'><a href='http://eccc.hpi-web.de/report/2011/118/download' class='external' target='_blank'>http://eccc.hpi-web.de/report/2011/118/download</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Detecting Dangerous Queries: A New Approach for Chosen Ciphertext Security</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/006.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/006.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Constant-Rate Oblivious Transfer from Noisy Channels</TD>  <TD class='link'><a href='http://www.iacr.org/conferences/crypto2011/abstracts/664.htm' class='external' target='_blank'>http://www.iacr.org/conferences/crypto2011/abstracts/664.htm</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Efficient Non-interactive Secure Computation</TD>  <TD class='link'><a href='http://www.cs.illinois.edu/~mmp/pub/nisc-proceedings.pdf' class='external' target='_blank'>http://www.cs.illinois.edu/~mmp/pub/nisc-proceedings.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Identifying Cheaters Without an Honest Majority</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-28914-9_2#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-28914-9_2#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Cryptography with Tamperable and Leaky Memory</TD>  <TD class='link'><a href='http://research.microsoft.com/en-us/um/people/yael/publications/2011-Cryptography_with_Tamperable_and_Leaky_Memory.pdf' class='external' target='_blank'>http://research.microsoft.com/en-us/um/people/yael/publications/2011-Cryptography_with_Tamperable_and_Leaky_Memory.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>On the (In)security of Hash-based Oblivious RAM and a New Balancing Scheme</TD>  <TD class='link'><a href='http://www.researchgate.net/publication/220779318_On_the_%28in%29security_of_hash-based_oblivious_RAM_and_a_new_balancing_scheme' class='external' target='_blank'>http://www.researchgate.net/publication/220779318_On_the_%28in%29security_of_hash-based_oblivious_RAM_and_a_new_balancing_scheme</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Trapdoors for Lattices: Simpler, Tighter, Faster, Smaller</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/501' class='external' target='_blank'>https://eprint.iacr.org/2011/501</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Georgia Tech<a name='Georgia Tech'></a></TD>
+<TD class='title'>Memory-Efficient Garbled Circuit Generation for Mobile Devices</TD>  <TD class='link'><a href='http://ix.cs.uoregon.edu/~butler/pubs/fc11.pdf' class='external' target='_blank'>http://ix.cs.uoregon.edu/~butler/pubs/fc11.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>Bi-Deniable Public-Key Encryption</TD>  <TD class='link'><a href='http://www.cc.gatech.edu/~cpeikert/pubs/deniable.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~cpeikert/pubs/deniable.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>How to Delegate and Verify in Public: Verifiable Computation from Attribute-based Encryption</TD>  <TD class='link'><a href='http://research.microsoft.com/apps/pubs/default.aspx?id=157921' class='external' target='_blank'>http://research.microsoft.com/apps/pubs/default.aspx?id=157921</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Computing Blindfolded: New Developments in Fully Homomorphic Encryption</TD>  <TD class='link'><a href='http://www.cs.utoronto.ca/~vinodv/FHE-focs-survey.pdf' class='external' target='_blank'>http://www.cs.utoronto.ca/~vinodv/FHE-focs-survey.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Dual Form Signatures: An Approach for Proving Security from Static Assumptions</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/261.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/261.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Functional Encryption for Regular Languages</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/384.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/384.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Dynamic Credentials and Ciphertext Delegation for Attribute-Based Encryption</TD>  <TD class='link'><a href='https://eprint.iacr.org/2012/437.pdf' class='external' target='_blank'>https://eprint.iacr.org/2012/437.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>New Proof Methods for Attribute-Based Encryption: Achieving Full Security through Selective Techniques</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/326.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/326.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCI<a name='UCI'></a></TD>
+<TD class='title'>Fully Homomorphic Encryption for Mathematicians</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/250.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/250.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Approximating Large Frequency Moments with Pick-and-Drop Sampling</TD>  <TD class='link'><a href='http://arxiv.org/abs/1212.0202' class='external' target='_blank'>http://arxiv.org/abs/1212.0202</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Generalizing the Layering Method of Indyk and Woodruff: Recursive Sketches for Frequency-Based Vectors on Streams</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-40328-6_5#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-40328-6_5#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>On Linear-Size Pseudorandom Generators and Hardcore Functions</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-38768-5_17' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-38768-5_17</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Cryptography Using Captcha Puzzles</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/689' class='external' target='_blank'>http://eprint.iacr.org/2012/689</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Concurrent Zero Knowledge in the Bounded Player Model</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/279.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/279.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Succinct Non-interactive Arguments via Linear Interactive Proofs</TD>  <TD class='link'><a href='https://eprint.iacr.org/2012/718' class='external' target='_blank'>https://eprint.iacr.org/2012/718</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Revisiting Lower and Upper Bounds for Selective Decommitments</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/536' class='external' target='_blank'>http://eprint.iacr.org/2011/536</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>New Techniques for Noninteractive Zero-Knowledge</TD>  <TD class='link'><a href='http://www0.cs.ucl.ac.uk/staff/J.Groth/NIZKJournal.pdf' class='external' target='_blank'>http://www0.cs.ucl.ac.uk/staff/J.Groth/NIZKJournal.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>The Effectiveness of Lloyd-type Methods for the k-Means Problem</TD>  <TD class='link'><a href='http://www.cs.ucla.edu/~rafail/PUBLIC/76.pdf' class='external' target='_blank'>http://www.cs.ucla.edu/~rafail/PUBLIC/76.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Impossibility Results for Static Input Secure Computation</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/433.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/433.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Near-Linear Unconditionally-Secure Multiparty Computation with a Dishonest Minority</TD>  <TD class='link'><a href='http://eprint.iacr.org/2011/629.pdf' class='external' target='_blank'>http://eprint.iacr.org/2011/629.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Unconditionally-Secure Robust Secret Sharing with Compact Shares</TD>  <TD class='link'><a href='http://www.cs.bris.ac.uk/eurocrypt2012/Program/Mon/Fehr.pdf' class='external' target='_blank'>http://www.cs.bris.ac.uk/eurocrypt2012/Program/Mon/Fehr.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Constructing Non-malleable Commitments: A Black-Box Approach</TD>  <TD class='link'><a href='http://research.microsoft.com/en-us/um/people/vipul/bbnmcom.pdf' class='external' target='_blank'>http://research.microsoft.com/en-us/um/people/vipul/bbnmcom.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Nearly Simultaneously Resettable Black-Box Zero Knowledge</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-31594-7_8#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-31594-7_8#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Edge Fault Tolerance on Sparse Networks</TD>  <TD class='link'><a href='http://research.microsoft.com/en-us/um/people/nichandr/edgefaulttolerance.pdf' class='external' target='_blank'>http://research.microsoft.com/en-us/um/people/nichandr/edgefaulttolerance.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Multiparty Proximity Testing with Dishonest Majority from Equality Testing</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/378.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/378.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Bristol<a name='Bristol'></a></TD>
+<TD class='title'>Multiparty computation from somewhat homomorphic encryption</TD>  <TD class='link'><a href='https://eprint.iacr.org/2011/535' class='external' target='_blank'>https://eprint.iacr.org/2011/535</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Bristol<a name='Bristol'></a></TD>
+<TD class='title'>Implementing AES via an Actively/Covertly Secure Dishonest-Majority MPC Protocol</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/262.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/262.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Classical Hardness of Learning with Errors</TD>  <TD class='link'><a href='http://arxiv.org/pdf/1306.0281' class='external' target='_blank'>http://arxiv.org/pdf/1306.0281</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>A Toolkit for Ring-LWE Cryptography</TD>  <TD class='link'><a href='http://www.di.ens.fr/~lyubash/papers/toolkit.pdf' class='external' target='_blank'>http://www.di.ens.fr/~lyubash/papers/toolkit.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>How to Share a Lattice Trapdoor: Threshold Protocols for Signatures and (H)IBE</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/419.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/419.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Zerocoin: Anonymous Distributed e-Cash from Bitcoin</TD>  <TD class='link'><a href='http://spar.isi.jhu.edu/~mgreen/ZerocoinOakland.pdf' class='external' target='_blank'>http://spar.isi.jhu.edu/~mgreen/ZerocoinOakland.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Machine-Generated Algorithms, Proofs and Software for the Batch Verification of Digital Signature Schemes</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/175' class='external' target='_blank'>http://eprint.iacr.org/2013/175</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Vis-a-Vis Cryptography: Private and Trustworthy In-Person Certifications</TD>  <TD class='link'><a href='https://www.usenix.org/system/files/conference/healthsec12/healthsec12-final25.pdf' class='external' target='_blank'>https://www.usenix.org/system/files/conference/healthsec12/healthsec12-final25.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>An Equational Approach to Secure Multi-Party Computation</TD>  <TD class='link'><a href='http://cseweb.ucsd.edu/~daniele/papers/ITCS13.pdf' class='external' target='_blank'>http://cseweb.ucsd.edu/~daniele/papers/ITCS13.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cybernetica<a name='Cybernetica'></a></TD>
+<TD class='title'>AES block cipher implementation and secure database join on the Sharemind secure multi-party computation framework</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Unprovable Security of Perfect NIZK and Non-interactive Non-malleable Commitments</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~rafael/papers/limits2new.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~rafael/papers/limits2new.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>On the Power of Many 1-Bit Provers</TD>  <TD class='link'><a href='http://arxiv.org/abs/1301.2729' class='external' target='_blank'>http://arxiv.org/abs/1301.2729</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>On The Power of Non-uniform Proofs of Security</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~chung/download/nonuniform-camera.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~chung/download/nonuniform-camera.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>UC from OT</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Blackbox Construction of Composable Protocols</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~rafael/papers/bbsmc.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~rafael/papers/bbsmc.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>The Curious Case of Non-interactive Commitments</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/523' class='external' target='_blank'>http://eprint.iacr.org/2012/523</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Billion-gate Secure Two-party Computation</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/179' class='external' target='_blank'>http://eprint.iacr.org/2012/179</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Non-Black-Box Simulation from One-Way Functions And Applications to Resettable Security</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/008.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/008.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>When Homomorphism Becomes a Liability</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/225.pdf?' class='external' target='_blank'>http://eprint.iacr.org/2012/225.pdf?</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Quantum-secure Message Authentication Codes</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/606.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/606.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Dynamic Proofs of Retrievability via Oblivous RAM</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/550' class='external' target='_blank'>http://eprint.iacr.org/2012/550</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>How to Catch L 2-Heavy-Hitters on Sliding Windows</TD>  <TD class='link'><a href='http://arxiv.org/pdf/1012.3130' class='external' target='_blank'>http://arxiv.org/pdf/1012.3130</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Optimal Coding for Streaming Authentication and Interactive Communication</TD>  <TD class='link'><a href='http://eccc.hpi-web.de/report/2012/104/download/' class='external' target='_blank'>http://eccc.hpi-web.de/report/2012/104/download/</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Universally Composable Secure Computation with (Malicious) Physically Uncloneable Functions</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/143' class='external' target='_blank'>http://eprint.iacr.org/2012/143</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>How Hard Is Counting Triangles in the Streaming Model?</TD>  <TD class='link'><a href='http://arxiv.org/pdf/1304.1458' class='external' target='_blank'>http://arxiv.org/pdf/1304.1458</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Local Correctability of Expander Codes</TD>  <TD class='link'><a href='http://arxiv.org/abs/1304.8129' class='external' target='_blank'>http://arxiv.org/abs/1304.8129</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Robust Pseudorandom Generators</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/671.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/671.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>Practical Bootstrapping with Polylogarithmic Overhead</TD>  <TD class='link'>Not Yet Published</TD>
+</TR>
+<TR>
+  <TD class='team'>Stanford University<a name='Stanford University'></a></TD>
+<TD class='title'>Hardness of SIS and LWE with Small Parameters</TD>  <TD class='link'><a href='https://eprint.iacr.org/2013/069.pdf' class='external' target='_blank'>https://eprint.iacr.org/2013/069.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BBN<a name='BBN'></a></TD>
+<TD class='title'>Accelerating Computations on Encrypted Data with an FPGA</TD>  <TD class='link'><a href='http://www.mathworks.com/company/newsletters/articles/accelerating-computations-on-encrypted-data-with-an-fpga.html' class='external' target='_blank'>http://www.mathworks.com/company/newsletters/articles/accelerating-computations-on-encrypted-data-with-an-fpga.html</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cybernetica<a name='Cybernetica'></a></TD>
+<TD class='title'>From Oblivious AES to Efficient and Secure Database Join in the Multiparty Setting</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/203' class='external' target='_blank'>http://eprint.iacr.org/2013/203</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Yale University<a name='Yale University'></a></TD>
+<TD class='title'>Structural Cloud Audits that Protect Private Information</TD>  <TD class='link'><a href='http://www.cs.yale.edu/homes/jf/ccsw-24-xiao.pdf' class='external' target='_blank'>http://www.cs.yale.edu/homes/jf/ccsw-24-xiao.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Georgia Tech<a name='Georgia Tech'></a></TD>
+<TD class='title'>Secure Outsourced Garbled Circuit Evaluation for Mobile Devices</TD>  <TD class='link'><a href='http://0b4af6cdc2f0c5998459-c0245c5c937c5dedcca3f1764ecc9b2f.r43.cf2.rackcdn.com/12310-sec13-paper_carter.pdf' class='external' target='_blank'>http://0b4af6cdc2f0c5998459-c0245c5c937c5dedcca3f1764ecc9b2f.r43.cf2.rackcdn.com/12310-sec13-paper_carter.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>PCF: A Portable Circuit Format for Scalable Two-Party Secure Computation</TD>  <TD class='link'><a href='http://0b4af6cdc2f0c5998459-c0245c5c937c5dedcca3f1764ecc9b2f.r43.cf2.rackcdn.com/12312-sec13-paper_kreuter.pdf' class='external' target='_blank'>http://0b4af6cdc2f0c5998459-c0245c5c937c5dedcca3f1764ecc9b2f.r43.cf2.rackcdn.com/12312-sec13-paper_kreuter.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Georgia Tech<a name='Georgia Tech'></a></TD>
+<TD class='title'>For Your Phone Only: Custom Protocols for Efficient Secure Function Evaluation on Mobile Devices</TD>  <TD class='link'><a href='http://onlinelibrary.wiley.com/doi/10.1002/sec.851/abstract' class='external' target='_blank'>http://onlinelibrary.wiley.com/doi/10.1002/sec.851/abstract</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Predicate Encryption Supporting Disjunctions, Polynomial Equations, and Inner Products</TD>  <TD class='link'><a href='https://eprint.iacr.org/2007/404.pdf' class='external' target='_blank'>https://eprint.iacr.org/2007/404.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Sequential Aggregate Signatures, Multisignatures, and Verifiably Encrypted Signatures Without Random Oracles</TD>  <TD class='link'><a href='http://cseweb.ucsd.edu/~hovav/dist/agg-sig.pdf' class='external' target='_blank'>http://cseweb.ucsd.edu/~hovav/dist/agg-sig.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Zero Knowledge LTCs and Their Applications</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-40328-6_42#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-40328-6_42#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/340.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/340.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>UCLA<a name='UCLA'></a></TD>
+<TD class='title'>Accuracy-Privacy Tradeoffs for Two-Party Differentially Private Protocols</TD>  <TD class='link'><a href='http://research.microsoft.com/jump/192517' class='external' target='_blank'>http://research.microsoft.com/jump/192517</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Secure Computation Against Adaptive Auxiliary Information</TD>  <TD class='link'><a href='http://research.microsoft.com/en-us/um/people/yael/publications/2013-secure-adaptive-aux.pdf' class='external' target='_blank'>http://research.microsoft.com/en-us/um/people/yael/publications/2013-secure-adaptive-aux.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Attribute-Based Encryption for Circuits from Multilinear Maps</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/128' class='external' target='_blank'>http://eprint.iacr.org/2013/128</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Full Domain Hash from (Leveled) Multilinear Maps and Identity-Based Aggregate Signatures</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/434' class='external' target='_blank'>http://eprint.iacr.org/2013/434</a></TD>
+</TR>
+<TR>
+  <TD class='team'>IBM<a name='IBM'></a></TD>
+<TD class='title'>Witness encryption and its applications</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/258.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/258.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Bristol<a name='Bristol'></a></TD>
+<TD class='title'>Practical Covertly Secure MPC for Dishonest Majority - or: Breaking the SPDZ Limits</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/642.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/642.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Bristol<a name='Bristol'></a></TD>
+<TD class='title'>Estimating Key Sizes For High Dimensional Lattice Based Systems</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/630.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/630.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Bristol<a name='Bristol'></a></TD>
+<TD class='title'>Between a Rock and a Hard Place: Interpolating Between MPC and FHE</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/085.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/085.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>GPU and CPU Parallelization of Honest-but-Curious Secure Two Party Computation</TD>  <TD class='link'><a href='http://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=4&cad=rja&ved=0CD8QFjAD&url=http%3A%2F%2Fwww.cs.indiana.edu%2F~nhusted%2Fpresentations%2FACSAC2013-GPUGC.pptx&ei=AmDpUqeEGdTMsASXpoDADA&usg=AFQjCNGD5W9EBahO_T-fkYDn75AZ-t5Ctg&sig2=bq1w2wfg1HUfF6zdIW-Qzw&bvm=bv.60157871,d.cWc' class='external' target='_blank'>http://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=4&cad=rja&ved=0CD8QFjAD&url=http%3A%2F%2Fwww.cs.indiana.edu%2F~nhusted%2Fpresentations%2FACSAC2013-GPUGC.pptx&ei=AmDpUqeEGdTMsASXpoDADA&usg=AFQjCNGD5W9EBahO_T-fkYDn75AZ-t5Ctg&sig2=bq1w2wfg1HUfF6zdIW-Qzw&bvm=bv.60157871,d.cWc</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Using SMT Solvers to Automate Design Tasks for Encryption and Signature Schemes</TD>  <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2516718' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2516718</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Fast Two-Party Secure Computation with Minimal Assumptions</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/196.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/196.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Black-Box Proof of Knowledge of Plaintext and Multiparty Computation with Low Communication Overhead</TD>  <TD class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-36594-2_23#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-36594-2_23#page-1</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Knowledge-Preserving Interactive Coding</TD>  <TD class='link'><a href='http://www.iis.sinica.edu.tw/~kmchung/download/KP-coding-main.pdf' class='external' target='_blank'>http://www.iis.sinica.edu.tw/~kmchung/download/KP-coding-main.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Constant-round Concurrent Zero-knowledge from P-Certificates</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/563.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/563.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>From Unprovability to Environmentally Friendly Protocols</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~rafael/papers/EnvFriendly-proc.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~rafael/papers/EnvFriendly-proc.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Virginia<a name='University of Virginia'></a></TD>
+<TD class='title'>Simultaneous Resettability From One-way Functions</TD>  <TD class='link'><a href='http://www.iis.sinica.edu.tw/~kmchung/download/rsrZK.pdf' class='external' target='_blank'>http://www.iis.sinica.edu.tw/~kmchung/download/rsrZK.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Constrained Pseudorandom Functions and Their Applications</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/352.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/352.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>New Constructions and Proof Methods for Large Universe Attribute-Based Encryption</TD>  <TD class='link'><a href='https://eprint.iacr.org/2012/583.pdf' class='external' target='_blank'>https://eprint.iacr.org/2012/583.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Candidate Indistinguishability Obfuscation and Functional Encryption for All Circuits</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/451.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/451.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Texas<a name='University of Texas'></a></TD>
+<TD class='title'>Encoding Functions with Constant Online Rate or How to Compress Garbled Circuits Keys</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/693.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/693.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Attribute-Based Encryption for Circuits</TD>  <TD class='link'><a href='http://eprint.iacr.org/2013/337.pdf' class='external' target='_blank'>http://eprint.iacr.org/2013/337.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Reusable Garbled Circuits and Succinct Functional Encryption</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/733.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/733.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Overcoming the Worst-Case Curse for Cryptographic Constructions</TD>  <TD class='link'><a href='http://people.csail.mit.edu/nickolai/papers/goldwasser-we-eprint.pdf' class='external' target='_blank'>http://people.csail.mit.edu/nickolai/papers/goldwasser-we-eprint.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Functional Encryption: New Perspectives and Lower Bounds</TD>  <TD class='link'><a href='http://eprint.iacr.org/2012/468.pdf' class='external' target='_blank'>http://eprint.iacr.org/2012/468.pdf</a></TD>
+</TR>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>

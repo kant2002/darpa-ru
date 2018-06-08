@@ -1,0 +1,853 @@
+
+  <!DOCTYPE html>
+  <html lang='en'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/mission-oriented-resilient-clouds' class='programlink'>Mission-oriented Resilient Clouds (MRC)</a></h2>
+<div class='left-paragraph'><p>The Mission-oriented Resilient Clouds (MRC) program is addressing some of the security challenges facing cloud computing by developing technologies to detect, diagnose and respond to attacks in the cloud, with the goal of effectively building a 'community health system' for the cloud. MRC is also developing technologies intended to enable missions that are supported by cloud computing and other networked systems to continue functioning while under cyberattack.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-stuart-wagner' class='programmanagerlink'>Dr. Stuart Wagner</a></p><p>Contact: <a href='mailto:Stuart.Wagner@darpa.mil'>Stuart.Wagner@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Software</a></li><li><a href='#tabs1'>Publications</a></li><li><a href='#tabs300'>Search</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Search' id='search0'/><button class='clear_button' id='clear0'>Clear</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Project</th><th>Category</th><th>Code</th><th>Description</th><th>License</th></tr>
+ </thead>
+ <tbody  class='list'><TR>
+  <TD class='team'>Johns Hopkins University <a href='#Johns Hopkins University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://www.spines.org/' class='external' target='_blank'>Spines</a></TD>  <TD class=category>Cloud Computing, Messaging Systems</TD>
+  <TD class=code> <a href=http://www.dsn.jhu.edu/download/download_spines.cgi class='external' target='_blank'>http://www.dsn.jhu.edu/download/download_spines.cgi</a> </TD>
+ <TD class=description> Spines is a generic messaging infrastructure that provides transparent unicast, multicast and anycast communication over dynamic, multi-hop networking environments without the need for expensive router programming environments or low level router coding. It provides automatic reconfiguration and network flexibility required for research and production deployments. </TD>
+<TD class=license><span>BSD-like</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Johns Hopkins University <a href='#Johns Hopkins University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://www.dsn.jhu.edu/byzrep/prime.html' class='external' target='_blank'>Prime</a></TD>  <TD class=category>Cloud Computing, Replication Engine</TD>
+  <TD class=code> <a href=http://dsn.jhu.edu/download/download_prime_MZceyx.cgi class='external' target='_blank'>http://dsn.jhu.edu/download/download_prime_MZceyx.cgi</a> </TD>
+ <TD class=description> Prime is a Byzantine fault-tolerant replication system whose goal is to provide a meaningful level of performance even after some of the replication servers have been compromised. Prime meets Safety (consistency of the correct replicas) and Liveness (the eventual execution of each update) constraints as long as no more than f out of 3f+1 replicas are compromised and the network is sufficiently stable. Prime also meets a stronger, Bounded-Delay, performance guarantee that limits the amount of performance degradation that can be caused by malicious servers. </TD>
+<TD class=license><span>BSD-like</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://isis2.codeplex.com/releases' class='external' target='_blank'>Isis2</a></TD>  <TD class=category>Distributed Computing, Cloud Computing</TD>
+  <TD class=code> <a href=http://isis2.codeplex.com/downloads/get/772418 class='external' target='_blank'>http://isis2.codeplex.com/downloads/get/772418</a> </TD>
+ <TD class=description> Isis2 is a new option for cloud computing that can enable reliable, secure replication of data even in the highly elastic first-tier of the cloud. Isis2 is a project of Ken Birman at Cornell University. Although the system started out as a data replication technology (groups of programs that can share updates), in 2013 Isis2 became much more big-data oriented. </TD>
+<TD class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://www.cs.cornell.edu/~burgess/tcpr/' class='external' target='_blank'>TCPR</a></TD>  <TD class=category>High Assurance Computing, Network Protocols</TD>
+  <TD class=code> <a href=https://github.com/rahpaere/tcpr/ class='external' target='_blank'>https://github.com/rahpaere/tcpr/</a> </TD>
+ <TD class=description> TCPR can turn one or both of the endpoints of a TCP connection in to a long-lived one, surviving both migration and failure+recovery events, transparently to the other endpoint. This version should be used for standard TCP connections. </TD>
+<TD class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://www.cs.cornell.edu/~burgess/tcpr/' class='external' target='_blank'>TCPR-SSL</a></TD>  <TD class=category>High Assurance Computing, Network Protocols</TD>
+  <TD class=code> <a href=https://github.com/rvanren/TCPR-SSL class='external' target='_blank'>https://github.com/rvanren/TCPR-SSL</a> </TD>
+ <TD class=description> TCPR can turn one or both of the endpoints of a TCP connection in to a long-lived one, surviving both migration and failure+recovery events, transparently to the other endpoint. This release has been integrated with OpenSSL. </TD>
+<TD class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='https://liveobjects.codeplex.com' class='external' target='_blank'>Live Distributed Objects</a></TD>  <TD class=category>Cloud Computing, Collaboration, Mashups</TD>
+  <TD class=code> <a href=https://liveobjects.codeplex.com class='external' target='_blank'>https://liveobjects.codeplex.com</a> </TD>
+ <TD class=description> Live Distributed Objects is a visualization technology for creating collaborative shared applications (live objects) where any change made by any user is immediately mirrored to all other users.  The technology is cloud-based but can operate without any central server or data center if desired, making it feasible to use it in a forward mission situation where back-connectivity to the data center is disrupted. </TD>
+<TD class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='https://ldo4gridcloud.codeplex.com' class='external' target='_blank'>Live Distributed Objects integrated with Isis2</a></TD>  <TD class=category>Cloud Computing, Collaboration, Mashups</TD>
+  <TD class=code> <a href=https://ldo4gridcloud.codeplex.com class='external' target='_blank'>https://ldo4gridcloud.codeplex.com</a> </TD>
+ <TD class=description> Live Distributed Objects is a visualization technology for creating collaborative shared applications (live objects) where any change made by any user is immediately mirrored to all other users.  The technology is cloud-based but can operate without any central server or data center if desired, making it feasible to use it in a forward mission situation where back-connectivity to the data center is disrupted.  The original Live Distributed Objects technology doesn't compile on the most recent Windows 8 release from Microsoft, and lacked a driver to integrate it with Isis2.  This code base resolves both issues, but the main documentation remains unchanged and should be accessed on the Live Distributed Objects release site. </TD>
+<TD class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='https://github.com/nschiper/ShadowDB' class='external' target='_blank'>ShadowDB</a></TD>  <TD class=category>High Assurance Computing, Database</TD>
+  <TD class=code> <a href=https://github.com/nschiper/ShadowDB class='external' target='_blank'>https://github.com/nschiper/ShadowDB</a> </TD>
+ <TD class=description> A replicated database built from ODBC-compatible databases and synthesized 'correct-by-construction' consensus code. </TD>
+<TD class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>SRI International <a href='#SRI International' onclick='pubSearch(this)'>(publications)</a>, University of Cambridge <a href='#University of Cambridge' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://openmirage.org/' class='external' target='_blank'>Mirage Operating System</a></TD>  <TD class=category>Security, Operating Systems, Programming Languages</TD>
+  <TD class=code> <a href=http://openmirage.org/wiki/install class='external' target='_blank'>http://openmirage.org/wiki/install</a> </TD>
+ <TD class=description> Mirage is a unikernel for constructing secure, high-performance network applications across a variety of cloud computing and mobile platforms. Code can be developed on a normal OS such as Linux or MacOS X, and then compiled into a fully-standalone, specialised kernel that runs under the Xen hypervisor. The framework is fully event-driven, with no support for preemptive threading. </TD>
+<TD class=license><span>ISC</span>, <span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>SRI International <a href='#SRI International' onclick='pubSearch(this)'>(publications)</a>, University of Cambridge <a href='#University of Cambridge' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://www.openflowsec.org/' class='external' target='_blank'>SE-Floodlight (SEK)</a></TD>  <TD class=category>Security, Software Defined Networking</TD>
+  <TD class=code> Please contact Phil Porras (SRI) </TD>
+ <TD class=description> SE-Floodlight is a software extension to the BigSwitch Floodlight controller, providing role-based authorization and strong security constraints enforcement.  It is the first reference implementation of an SDN security policy enforcing mediation service in an OpenFlow stack. </TD>
+<TD class=license><span>SRI no-cost research purposes license</span> </TD>
+ </TR>
+<TR>
+  <TD class='team'>SRI International <a href='#SRI International' onclick='pubSearch(this)'>(publications)</a>, University of Cambridge <a href='#University of Cambridge' onclick='pubSearch(this)'>(publications)</a></TD>
+ <TD width='202' class='project'><a href='http://www.openflowsec.org/' class='external' target='_blank'>SDN Security Actuator</a></TD>  <TD class=category>Security, Software Defined Networking</TD>
+  <TD class=code> Please contact Phil Porras (SRI) </TD>
+ <TD class=description> The SDN Security Actuator is a middle-ware abstraction service that enables legacy INFOSEC security products and technology to easily integrate into an OpenFlow network stack.  The Security Actuator enables security services to communicate high level threat response directives, which are then translated into stateful OpenFlow flow rule insertions to are sent to SE-Floodlight.  These directives utilize SE-Floodlight's Alias Rule Reduction algorithm to ensure that all redirections and blocks cannot be circumvented by flow rules set actions that implement virtual tunnels that would otherwise violate the directive. </TD>
+<TD class=license><span>SRI no-cost research purposes license</span> </TD>
+ </TR>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Search' id='search1'/><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><TR>
+  <TD class='team'>Applied Communication Sciences<a name='Applied Communication Sciences'></a></TD>
+<TD class='title'>Multi-Resource Allocation: Fairness-Efficiency Tradeoffs in a Unifying Framework</TD>  <TD class='link'><a href='http://www.tc.umn.edu/~ssen/papers/Infocom2012.pdf' class='external' target='_blank'>http://www.tc.umn.edu/~ssen/papers/Infocom2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Applied Communication Sciences<a name='Applied Communication Sciences'></a></TD>
+<TD class='title'>Autonomous, Collaborative Control for Resilient Cyber Defense</TD>  <TD class='link'><a href='http://www.princeton.edu/~mwseven/ACCORD2012.pdf' class='external' target='_blank'>http://www.princeton.edu/~mwseven/ACCORD2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Adventium Enterprises<a name='Adventium Enterprises'></a></TD>
+<TD class='title'>Constraint-Based Allocation of Cloud Resources to Maximize Mission Effectiveness</TD>  <TD class='link'><a href='http://www.adventiumlabs.com/sites/adventiumlabs.com/files/publication/Boddy_COPLAS-12.pdf' class='external' target='_blank'>http://www.adventiumlabs.com/sites/adventiumlabs.com/files/publication/Boddy_COPLAS-12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>BAE Systems<a name='BAE Systems'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a>, Portland State University<a name='Portland State University'></a></TD>
+<TD class='title'>Private and Verifiable Interdomain Routing Decisions</TD>  <TD class='link'><a href='http://www.cis.upenn.edu/~ahae/papers/pvr-sigcomm2012.pdf' class='external' target='_blank'>http://www.cis.upenn.edu/~ahae/papers/pvr-sigcomm2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Cloudopsy: An Autopsy of Data Flows in the Cloud</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~vpappas/papers/cloudopsy.hci13.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~vpappas/papers/cloudopsy.hci13.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Sound and Precise Analysis of Parallel Programs through Schedule Specialization</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~junfeng/papers/wu-pldi12.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~junfeng/papers/wu-pldi12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Concurrency Attacks</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~junfeng/papers/con-hotpar12.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~junfeng/papers/con-hotpar12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>CleanOS: Limiting Mobile Data Exposure with Idle Eviction</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~roxana/research/projects/cleanos/osdi2012cleanos.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~roxana/research/projects/cleanos/osdi2012cleanos.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Self-healing Multitier Architectures Using Cascading Rescue Points</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/nsl/papers/2012/crp.acsac12.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/nsl/papers/2012/crp.acsac12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Exploiting Split Browsers for Efficiently Protecting User Data</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~angelos/Papers/2012/split_browser.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~angelos/Papers/2012/split_browser.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Adaptive Defenses for Commodity Software through Virtual Application Partitioning</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/nsl/papers/2012/vap.ccs12.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/nsl/papers/2012/vap.ccs12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Lost in Translation: Improving Decoy Documents via Automated Translation</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Fog Computing: Mitigating Insider Data Theft Attacks in the Cloud</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6227695' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6227695</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Position Paper: The MEERKATS Cloud Security Architecture</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~roxana/research/projects/evade/meerkats-position.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~roxana/research/projects/evade/meerkats-position.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Columbia University<a name='Columbia University'></a>, Symantec<a name='Symantec'></a></TD>
+<TD class='title'>Towards a Universal Data Provenance Framework using Dynamic Instrumentation</TD>  <TD class='link'><a href='http://www.cs.columbia.edu/~vpappas/papers/provenance.sec12.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~vpappas/papers/provenance.sec12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Application-Driven TCP Recovery</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/tcpr.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/tcpr.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>SoNIC: Precise Realtime Software Access and Control of Wired Networks</TD>  <TD class='link'><a href='http://fireless.cs.cornell.edu/sonic/sonic_nsdi2013.pdf' class='external' target='_blank'>http://fireless.cs.cornell.edu/sonic/sonic_nsdi2013.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Secure Abstraction with Code Capabilities</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/pdp2013.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/pdp2013.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Gecko: Contention-Oblivious Disk Arrays for Cloud Storage</TD>  <TD class='link'><a href='https://www.usenix.org/system/files/conference/hotstorage12/hotstorage12-final57.pdf' class='external' target='_blank'>https://www.usenix.org/system/files/conference/hotstorage12/hotstorage12-final57.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Byzantine Chain Replication</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~ns672/publications/2012OPODIS.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~ns672/publications/2012OPODIS.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>A Diversified and Correct-by-Construction Broadcast Service</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~ns672/publications/2012WRIPE.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~ns672/publications/2012WRIPE.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>ShadowDB: A Replicated Database on a Synthesized Consensus Core</TD>  <TD class='link'><a href='https://www.usenix.org/system/files/conference/hotdep12/hotdep12-final14.pdf' class='external' target='_blank'>https://www.usenix.org/system/files/conference/hotdep12/hotdep12-final14.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Live Network Streaming with Utilities and Cost</TD>  <TD class='link'><a href='http://www.ymsir.com/papers/gradient-ladis.pdf' class='external' target='_blank'>http://www.ymsir.com/papers/gradient-ladis.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>The Xen-Blanket: Virtualize Once, Run Everywhere</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/courses/CS5412/2014sp/papers/xen_blanket_eurosys_2012.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/courses/CS5412/2014sp/papers/xen_blanket_eurosys_2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Overcoming CAP with Consistent Soft-State Replication</TD>  <TD class='link'><a href='https://www.cs.cornell.edu/Projects/mrc/IEEE-CAP.16.pdf' class='external' target='_blank'>https://www.cs.cornell.edu/Projects/mrc/IEEE-CAP.16.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Fact-based Inter-Process Communication Primitives for Programming Distributed Systems</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/lada2012.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/lada2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Virtually Synchronous Methodology for Dynamic Service Replication</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/vs-submit.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/projects/quicksilver/public_pdfs/vs-submit.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Routers for the Cloud. Can the Internet Achieve 5-Nines Availability?</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~burgess/tcpr/routers-for-the-cloud.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~burgess/tcpr/routers-for-the-cloud.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Cornell University<a name='Cornell University'></a></TD>
+<TD class='title'>Plug into the Supercloud</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6365162&sortType%3Dasc_p_Sequence%26filter%3DAND%28p_IS_Number%3A6488666%29' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6365162&sortType%3Dasc_p_Sequence%26filter%3DAND%28p_IS_Number%3A6488666%29</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a>, Purdue University<a name='Purdue University'></a></TD>
+<TD class='title'>Intrusion-Tolerant Cloud Monitoring and Control</TD>  <TD class='link'><a href='http://www.cnds.jhu.edu/pub/papers/LADIS2012.pdf' class='external' target='_blank'>http://www.cnds.jhu.edu/pub/papers/LADIS2012.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a>, Purdue University<a name='Purdue University'></a></TD>
+<TD class='title'>Increasing Network Resiliency by Optimally Assigning Diverse Variants to Routing Nodes</TD>  <TD class='link'><a href='http://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=2766&context=cstech' class='external' target='_blank'>http://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=2766&context=cstech</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a>, Purdue University<a name='Purdue University'></a></TD>
+<TD class='title'>How to Catch L2-Heavy-Hitters on Sliding Windows</TD>  <TD class='link'><a href='http://arxiv.org/pdf/1012.3130.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1012.3130.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a>, Purdue University<a name='Purdue University'></a></TD>
+<TD class='title'>How Hard is Counting Triangles in the Streaming Model</TD>  <TD class='link'><a href='http://arxiv.org/pdf/1304.1458.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1304.1458.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Dancing with Uncertainty</TD>  <TD class='link'><a href='http://people.csail.mit.edu/stelios/papers/races12.dubstep.pdf' class='external' target='_blank'>http://people.csail.mit.edu/stelios/papers/races12.dubstep.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Automatic Input Rectification</TD>  <TD class='link'><a href='http://people.csail.mit.edu/stelios/papers/input_rect_icse12.pdf' class='external' target='_blank'>http://people.csail.mit.edu/stelios/papers/input_rect_icse12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>MIT<a name='MIT'></a></TD>
+<TD class='title'>Bolt: On-Demand Infinite Loop Escape in Unmodified Binaries</TD>  <TD class='link'><a href='http://people.csail.mit.edu/rinard/paper/oopsla12.pdf' class='external' target='_blank'>http://people.csail.mit.edu/rinard/paper/oopsla12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Smart Information Flow Technologies<a name='Smart Information Flow Technologies'></a>, DOLL<a name='DOLL'></a></TD>
+<TD class='title'>STRATUS: Strategic and Tactical Resiliency Against Threats to Ubiquitous Systems</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6498378' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6498378</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Smart Information Flow Technologies<a name='Smart Information Flow Technologies'></a>, DOLL<a name='DOLL'></a></TD>
+<TD class='title'>Adaptive Security and Trust</TD>  <TD class='link'><a href='http://sdiwc.net/digital-library/web-admin/upload-pdf/00000557.pdf' class='external' target='_blank'>http://sdiwc.net/digital-library/web-admin/upload-pdf/00000557.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>Smart Information Flow Technologies<a name='Smart Information Flow Technologies'></a>, DOLL<a name='DOLL'></a></TD>
+<TD class='title'>The GoDeL Planning System: A More Perfect Union of Domain-Independent and Hierarchical Planning</TD>  <TD class='link'><a href='http://www.cs.umd.edu/~nau/papers/shivashankar2013godel.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~nau/papers/shivashankar2013godel.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI International<a name='SRI International'></a>, University of Cambridge<a name='University of Cambridge'></a></TD>
+<TD class='title'>FRESCO: Modular Composable Security Services for Software-Defined Networking</TD>  <TD class='link'><a href='http://www.csl.sri.com/users/vinod/papers/fresco.pdf' class='external' target='_blank'>http://www.csl.sri.com/users/vinod/papers/fresco.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI International<a name='SRI International'></a>, University of Cambridge<a name='University of Cambridge'></a></TD>
+<TD class='title'>Unikernels: Library Operating System for the Cloud</TD>  <TD class='link'><a href='http://anil.recoil.org/papers/2013-asplos-mirage.pdf' class='external' target='_blank'>http://anil.recoil.org/papers/2013-asplos-mirage.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI International<a name='SRI International'></a>, University of Cambridge<a name='University of Cambridge'></a></TD>
+<TD class='title'>Declarative, Temporal, and Practical Programming with Capabilities</TD>  <TD class='link'><a href='http://www.ieee-security.org/TC/SP2013/papers/4977a018.pdf' class='external' target='_blank'>http://www.ieee-security.org/TC/SP2013/papers/4977a018.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI International<a name='SRI International'></a>, University of Cambridge<a name='University of Cambridge'></a></TD>
+<TD class='title'>AVANT-GUARD: Scalable and Vigilant Switch Flow Management in Software-Defined Networks</TD>  <TD class='link'><a href='http://faculty.cse.tamu.edu/guofei/paper/AvantGuard-CCS13.pdf' class='external' target='_blank'>http://faculty.cse.tamu.edu/guofei/paper/AvantGuard-CCS13.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI International<a name='SRI International'></a>, University of Cambridge<a name='University of Cambridge'></a></TD>
+<TD class='title'>Authentication for Resilience: The Case of SDN</TD>  <TD class='link'><a href='https://www.cl.cam.ac.uk/~rja14/Papers/sdnresilience-spw2013-yu.pdf' class='external' target='_blank'>https://www.cl.cam.ac.uk/~rja14/Papers/sdnresilience-spw2013-yu.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>SRI International<a name='SRI International'></a>, University of Cambridge<a name='University of Cambridge'></a></TD>
+<TD class='title'>Enabling Hardware Exploration in Software-Defined Networking: A Flexible Portable OpenFlow Switch</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6546009' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6546009</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>Scalable Network Virtualization in Software-Defined Networks</TD>  <TD class='link'><a href='http://www.cs.princeton.edu/~jrex/papers/ieeeinternet12.pdf' class='external' target='_blank'>http://www.cs.princeton.edu/~jrex/papers/ieeeinternet12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>Live Migration of an Entire Network (And Its Hosts)</TD>  <TD class='link'><a href='http://www.cs.princeton.edu/~jrex/papers/lime-hotnets12.pdf' class='external' target='_blank'>http://www.cs.princeton.edu/~jrex/papers/lime-hotnets12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>DEFINED: Deterministic Execution for Interactive Control-Plane Debugging</TD>  <TD class='link'><a href='http://web.engr.illinois.edu/~jalapar1/papers/defined_atc13.pdf' class='external' target='_blank'>http://web.engr.illinois.edu/~jalapar1/papers/defined_atc13.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>VeriFlow: Verifying Network-Wide Invariants in Real Time</TD>  <TD class='link'><a href='http://web.engr.illinois.edu/~khurshi1/papers/veriflow-nsdi-2013.pdf' class='external' target='_blank'>http://web.engr.illinois.edu/~khurshi1/papers/veriflow-nsdi-2013.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>Walk the Line: Consistent Network Updates with Bandwidth Guarantees</TD>  <TD class='link'><a href='http://web.engr.illinois.edu/~ghorban2/papers/hot18-ghorbani.pdf' class='external' target='_blank'>http://web.engr.illinois.edu/~ghorban2/papers/hot18-ghorbani.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>SybilControl: Practical Sybil Defense with Computational Puzzles</TD>  <TD class='link'><a href='https://www.eecs.berkeley.edu/~frankli/li-sybilcontrol.pdf' class='external' target='_blank'>https://www.eecs.berkeley.edu/~frankli/li-sybilcontrol.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>Tiresias: Online Anomaly Detection for Hierarchical Operational Network Data</TD>  <TD class='link'><a href='http://www.research.att.com/techdocs/TD_100295.pdf' class='external' target='_blank'>http://www.research.att.com/techdocs/TD_100295.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>SMOG: A Cloud Platform for Seamless Wide area Migration of Networked Games</TD>  <TD class='link'><a href='http://www2.research.att.com/~slee/pubs/smog-netgames12.pdf' class='external' target='_blank'>http://www2.research.att.com/~slee/pubs/smog-netgames12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>Programmable Host/Network Traffic Management</TD>  <TD class='link'><a href='http://www.cs.princeton.edu/~jrex/papers/hone12.pdf' class='external' target='_blank'>http://www.cs.princeton.edu/~jrex/papers/hone12.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>Transparent, Live Migration of a Software-Defined Network</TD>  <TD class='link'><a href='http://www.cs.princeton.edu/~cschlesi/nwmig.pdf' class='external' target='_blank'>http://www.cs.princeton.edu/~cschlesi/nwmig.pdf</a></TD>
+</TR>
+<TR>
+  <TD class='team'>University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a>, Princeton University<a name='Princeton University'></a></TD>
+<TD class='title'>HotSwap: Correct and Efficient Controller Upgrades for Software-Defined Networks</TD>  <TD class='link'><a href='http://www.cs.cornell.edu/~jnfoster/papers/frenetic-hotswap.pdf' class='external' target='_blank'>http://www.cs.cornell.edu/~jnfoster/papers/frenetic-hotswap.pdf</a></TD>
+</TR>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Search' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Clear</button><div id='sftwrTable'><h2>Software</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Publications</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
