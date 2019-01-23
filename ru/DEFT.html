@@ -1,0 +1,1534 @@
+
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/deep-exploration-and-filtering-of-text' class='programlink'>Deep Exploration and Filtering of Text (DEFT)</a></h2>
+<div class='left-paragraph'><p>Automated, deep natural-language processing (NLP) technology may hold a solution for more efficiently processing text information and enabling understanding connections in text that might not be readily apparent to humans. DARPA created the Deep Exploration and Filtering of Text (DEFT) program to harness the power of NLP. Sophisticated artificial intelligence of this nature has the potential to enable defense analysts to efficiently investigate orders of magnitude more documents, which would enable discovery of implicitly expressed, actionable information within those documents.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-boyan-onyshkevych' class='programmanagerlink'>Mr. Boyan Onyshkevych</a></p><p>Contact: <a href='mailto:boyan.onyshkevych@darpa.mil'>boyan.onyshkevych@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div>
+<div class='right-image'><img src="DEFT-image.jpg"/></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Software</a></li><li><a href='#tabs1'>Publications</a></li><li><a href='#tabs300'>Search</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Search' id='search0'/><button class='clear_button' id='clear0'>Clear</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Project</th><th>Category</th><th>Code</th><th>Description</th><th>License</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>University of Washington <a href='#University of Washington' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>ReVerb Relation Extractor</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Automatically identifies and extracts binary relationships from English sentences. Relations are lexical, i.e. they consist of a predicate (verb phrase) and its two noun phrase arguments. (Java/Scala) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span>, <span onmouseover='licenseInfo("CPL", "Common Public License", "http://opensource.org/licenses/cpl1.0.php", "This free software license has weak copyleft and choice of law clauses that make it incompatible with the GNU GPL.", event)'>CPL</span>, <span>In House</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Washington <a href='#University of Washington' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>OLLIE Relation Extractor</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Extracts relations among sentences. Relations are lexical, i.e. the consist of a predicate and arguments as in 1.1 and also include lexical information about attribution and the enabling condition. (Java/Scala) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span>, <span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span>, <span onmouseover='licenseInfo("BSDv2", "BSD 2-Clause Simplified or FreeBSD license", "http://opensource.org/licenses/BSD-2-Clause", "This is the original BSD license without the advertising (and one other) clause. It is a permissive, non-copyleft-free license.", event)'>BSDv2</span>, <span>http://www.maltparser.org/license.html</span>, <span>In house</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Massachusetts</td>
+ <td width='202' class='project'>Universal Schema Relation Extraction</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Extracts relations between entities in a large document collection. Relations are drawn from an ontology (e.g. attendedSchool). (Scala) </td>
+<td class=license><span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Massachusetts</td>
+ <td width='202' class='project'>Coreference within a Document</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies coreferences (group of equivalent items) within a document. Coreference is currently performed only for selected Entity types. (Scala) </td>
+<td class=license><span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Massachusetts</td>
+ <td width='202' class='project'>Cross Document Coreference with Resolution to Knowledge Base(KB)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies coreferences (group of equivalent items) within a document and resolves the coreferences with a KB. Coreference is currently performed for People and Organizations. (Scala) </td>
+<td class=license><span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Texas - Austin <a href='#University of Texas - Austin' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Bayesian Logic Programs for Textual Inference</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Infers new relations based on given set of relations and documents. Relations are drawn from an ontology (e.g. attendedSchool). (Java) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>QCCUNY</td>
+ <td width='202' class='project'>Labeled N-Ary Relations between Typed Text Spans</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Extracts (binary) relations from the document. Relations are drawn from an ontology (e.g. attendedSchool). (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span>, <span onmouseover='licenseInfo("LGPL", "GNU Library or Lesser General Public License (LGPL)", "http://www.gnu.org/licenses/lgpl.html", "This free software license is not strong copyleft, as it permits linking with nonfree modules.", event)'>LGPL</span>, <span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span>, <span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span>, <span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span>, <span onmouseover='licenseInfo("CPL", "Common Public License", "http://opensource.org/licenses/cpl1.0.php", "This free software license has weak copyleft and choice of law clauses that make it incompatible with the GNU GPL.", event)'>CPL</span>, <span onmouseover='licenseInfo("SUN", "Sun Public License", "http://en.wikipedia.org/wiki/Sun_Public_License", "Recognized by both the Free Software Foundation and the Open Source Initiative, the Sun Public License is derived from the Mozilla Public License.", event)'>SUN</span> </td>
+ </tr>
+<tr>
+  <td class='team'>QCCUNY</td>
+ <td width='202' class='project'>Speech Segmentation (Prosodic Analysis for Anomaly Analysis)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Assigns segmentation at the level of sentences, prosodic phrases or discourse units as an ordered list of start time-end time pairs. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPLv3", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPLv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>QCCUNY</td>
+ <td width='202' class='project'>Anomaly Analysis (Prosodic Analysis for Anomaly Analysis)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Annotates speech segment with confidence values denoting how uncertain the speaker is or how novel the information contained in the unit is. </td>
+<td class=license><span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Columbia University <a href='#Columbia University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Modality-CB Tagger</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Tags the modality of predicates (verbs) into one of six classes (ability, effort, intention, success, want, belief) and for those of the speaker/author of the text toward each proposition in the text. (Java) </td>
+<td class=license><span>InHouse</span>, <span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span>, <span onmouseover='licenseInfo("CPL", "Common Public License", "http://opensource.org/licenses/cpl1.0.php", "This free software license has weak copyleft and choice of law clauses that make it incompatible with the GNU GPL.", event)'>CPL</span>, <span onmouseover='licenseInfo("EPL", "Eclipse Public License", "http://www.eclipse.org/legal/epl-v10.html", "This free software license removes broader patent retaliation language in the Common Public License, but remains incompatible with the GNU GPL.", event)'>EPL</span>, <span onmouseover='licenseInfo("LGPL", "GNU Library or Lesser General Public License (LGPL)", "http://www.gnu.org/licenses/lgpl.html", "This free software license is not strong copyleft, as it permits linking with nonfree modules.", event)'>LGPL</span>, <span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span>, <span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span>, <span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Columbia University <a href='#Columbia University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Sarcasm Detection</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Judges whether a sentence is sarcastic or not. (Java) </td>
+<td class=license><span>Modified BSD license (LIBSVM)</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Columbia University <a href='#Columbia University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Interaction: Acoustic Analysis</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Generates a list of acoustic/prosodic characteristics from the input. (Java/C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Columbia University <a href='#Columbia University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Opinion</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Tags phrases in sentences for subjectivity and polarity. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span>, <span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span>, <span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span>, <span>In house</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Columbia University <a href='#Columbia University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Social Event Extraction</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Labels interaction events and their participants. There are at least two types: Interaction and Cognition. (Java/C++) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span>, <span>In house</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Oregon State University <a href='#Oregon State University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Cross Document Co-reference of Relations and Entities</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Extracts relations, entities, and co-reference information across a set of documents. Relations are drawn from an ontology (e.g. attendedSchool). The initial focus will be on people and organizations. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>CMUCS <a href='#CMUCS' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>CMUCS-coref-hovy-mitamura</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Performs coreference of events (verbs and nominalizations). Coreference is typed (i.e. identity, part-of, member-of). Limited set of epistemic values attached to each event. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("CMUCS", "Carnegie Mellon University Software Licensing", "http://www.cs.cmu.edu/~helpext/software_licensing/index.html", "Restricted by a university license that: (a)prohibits further distribution without the new recipient signing the license, (b)prohibits commercialization, and (c)protects the source organization, CMU and USC, from lawsuits.", event)'>CMUCS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>CMUCS <a href='#CMUCS' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Novelty Detection</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Assigns either a label or a numerical score of novelty in the input stream. </td>
+<td class=license><span onmouseover='licenseInfo("CMUCS", "Carnegie Mellon University Software Licensing", "http://www.cs.cmu.edu/~helpext/software_licensing/index.html", "Restricted by a university license that: (a)prohibits further distribution without the new recipient signing the license, (b)prohibits commercialization, and (c)protects the source organization, CMU and USC, from lawsuits.", event)'>CMUCS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>CMUCS <a href='#CMUCS' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>KB Web, Knowledge Resolver/Event Ontology Creation.htm, Event Ontology Creation</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Generates an ontology of possible events. Event is a list of entities, each associated with statistical distribution over associated verbs and subject/object positions relative to verb. Events also include a description of pairwise relationships between entities (e.g., coreferent or other). Per communication with the PI, this algorithm will be delayed. </td>
+<td class=license><span onmouseover='licenseInfo("CMUCS", "Carnegie Mellon University Software Licensing", "http://www.cs.cmu.edu/~helpext/software_licensing/index.html", "Restricted by a university license that: (a)prohibits further distribution without the new recipient signing the license, (b)prohibits commercialization, and (c)protects the source organization, CMU and USC, from lawsuits.", event)'>CMUCS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>CMUCS <a href='#CMUCS' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>KB Web, Knowledge Resolver/Knowledge Resolver.htm, Knowledge Resolver</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Processes a document and a set of hypotheses to generate the most coherent subset of hypotheses to explain the document. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("CMUCS", "Carnegie Mellon University Software Licensing", "http://www.cs.cmu.edu/~helpext/software_licensing/index.html", "Restricted by a university license that: (a)prohibits further distribution without the new recipient signing the license, (b)prohibits commercialization, and (c)protects the source organization, CMU and USC, from lawsuits.", event)'>CMUCS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>CMUML</td>
+ <td width='202' class='project'>KB Web, Knowledge Resolver/Knowledge Base Web Service.htm, Knowledge Base(KB) Web Service</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Retrieves semantic information about entities, slots, and their values. Also enables inference over the KB to determine confidence, justification, metadata, and relevant text for a given entity-slot pair. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Johns Hopkins University <a href='#Johns Hopkins University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>PPDB (Paraphrase Database)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Generates a ranked list of potential paraphrases for the input. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Johns Hopkins University <a href='#Johns Hopkins University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>DAPPER (Domain Adapted Paraphraser)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Generates a database of domain-specific paraphrases using the input data. </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Johns Hopkins University <a href='#Johns Hopkins University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>NattyLo  - Recognizing Textual Entailment (RTE) System</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies entailment relations (entails, contradicts, unrelated, etc.) between pairs of passages. </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Recognizing Textual Entailment</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies entailment relations (entails, contradicts, unrelated, etc.) between pairs of passages or structured hypothesis and passage. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Extended Semantic Role Labeling</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Exctracts n-ary relations within the document. Relation set is closer semantic/linguistic relations (e.g. BENEFICIARY, Arg-0). </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Discourse (Within Document complements Coreference)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Recognizes relations between events, where events are ESRL predicate/argument structures. Relations include CAUSE/ENABLE, PART-OF. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Wikifier</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies a coherent set of concepts of interest in a given document, based on entities/concepts in a reference collection(Wikipedia, for now). Links entities in a document to Wikipedia URLs. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>POS Tagger</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Assigns part of speech tags to words in the input document. </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Chunker</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Divides the input documents into shallow parse chunks. </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Named Entity Recognizer</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies named entities in the input document. </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Coreference (within document)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies coreferences in a document for both entities and verbs. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UIUC <a href='#UIUC' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Profiler</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies entity mentions in a collection of documents, and generates relevant relational statistics. The relations statisics are in terms of predicate argument structure. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("LLVM", "LLVM Release License", "http://llvm.org/releases/2.8/LICENSE.TXT", "Covered by the Illinois/NCSA Academic Use license. This allows individuals to use our software for non-commercial purposes, but restricts commercial use.", event)'>LLVM</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Attitude Extraction</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies the attitude (positive/negative) of an entity toward other entities within a sentence. (Java, Perl) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span>, <span>Cornell/UNT/Pitt open-source license</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Cornell University <a href='#Cornell University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Textual Similarity</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Assigns scores between [0,1] indicating the similarity in meaning between two sentences. (Java, Perl) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span>, <span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span>, <span>Cornell/UNT/Pitt open-source license</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Lexical Entailment Resource - get Relation</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies entailment relation (entails, contradicts, etc.) between a given pair of phrases. </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Stanford's Coreference (Within Document)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies entity and verb coreferences within the input document. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Semantic Textual Similarity</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Calculates the semantic similarity between a pair of input text. </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Stanford's Labeled N-Ary Relations between Typed Text Spans (v1- Relation Extraction for KBP-Slot Filling)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Extracts binary relations from a document. Relations are pulled from an ontology (e.g. attended school). (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Stanford's Coreference (Cross document with resolution to KB)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies entity coreferences across documents, and updates the KB with new found entities. System was designed for people and organizations. </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Stanford's Mention Detection (Within Document)</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies and labels entity mentions within a document. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University <a href='#Stanford University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://nlp.stanford.edu/software/CRF-NER.shtml' class='external' target='_blank'>Stanford Named Entity Recognizer</a></td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Identifies named entites in text. Can be used with various models. As packaged by default with Stanford CoreNLP, 12 classes are recognized: DATE, TIME, DURATION, SET, NUMBER, ORDINAL, PERSON, LOCATION, ORGANIZATION, MONEY, PERCENT, MISC. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPLv2", "GNU General Public License (GPL) version 2", "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html", "This free and copyleft software license is an older version of GPL3.", event)'>GPLv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>BBN <a href='#BBN' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>ADEPT v1.6</td>  <td class=category>Interface, API</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> Interfaces and integration framework for DEFT HLT algorithms and components. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>BBN <a href='#BBN' onclick='pubSearch(this)'>(publications)</a>, Next Century Corporation</td>
+ <td width='202' class='project'>ADEPT OWF-based Demo v1</td>  <td class=category>Visualization</td>
+  <td class=code> <a href='mailto:deft-software-requests@bbn.com'>deft-software-requests@bbn.com</a> </td>
+ <td class=description> User interface and visulization. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Search' id='search1'/><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>(WiscTeam) Indiana University<a name='(WiscTeam) Indiana University'></a></td>
+<td class='title'>Knowledge Intensive Learning: Combining Qualitative Constraints with Causal Independence for Parameter Learning in Probabilistic Models</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/KIL_ECML13.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/KIL_ECML13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Indiana University<a name='Indiana University'></a></td>
+<td class='title'>Guiding Autonomous Agents to Better Behaviors through Human Advice</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/kbirl_ICDM13.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/kbirl_ICDM13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) Wake Forest University<a name='(WiscTeam) Wake Forest University'></a>, Indiana University<a name='Indiana University'></a>, University of Wisconsin - Madison<a name='University of Wisconsin - Madison'></a>, University of Alberta, Canada<a name='University of Alberta, Canada'></a></td>
+<td class='title'>AR-Boost: Reducing Overfitting by a Robust Data-Driven Regularization Strategy</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/AR_Boost.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/AR_Boost.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) Fraunhofer IAIS<a name='(WiscTeam) Fraunhofer IAIS'></a>, TU Dortmund<a name='TU Dortmund'></a>, Indiana University<a name='Indiana University'></a></td>
+<td class='title'>Lifted Online Training of Relational Models with Stochastic Gradient Methods</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/ahmadi12ecmlpkdd.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/ahmadi12ecmlpkdd.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) Fraunhofer IAIS<a name='(WiscTeam) Fraunhofer IAIS'></a>, TU Dortmund<a name='TU Dortmund'></a>, Indiana University<a name='Indiana University'></a></td>
+<td class='title'>Lifted Parameter Learning in Relational Models</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/lifted_parameter_SRL12.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/lifted_parameter_SRL12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) Indiana University<a name='(WiscTeam) Indiana University'></a>, Cycorp<a name='Cycorp'></a>, University of Wisconsin - Madison<a name='University of Wisconsin - Madison'></a>, TU Dortmund<a name='TU Dortmund'></a>, Oregon State University<a name='Oregon State University'></a></td>
+<td class='title'>Accelerating Imitation Learning in Relational Domains via Transfer by Initialization</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/Imitation_StaRAI12.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/Imitation_StaRAI12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) Indiana University<a name='(WiscTeam) Indiana University'></a>, Wake Forest University<a name='Wake Forest University'></a>, University of Wisconsin - Madison<a name='University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a>, TU Dortmund<a name='TU Dortmund'></a></td>
+<td class='title'>Using Commonsense Knowledge to Automatically Create (Noisy) Training Examples from Text</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/WS_StaRAI13.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/WS_StaRAI13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Indiana University<a name='Indiana University'></a>, TU Dortmund<a name='TU Dortmund'></a></td>
+<td class='title'>Learning Relational Probabilistic Models from Partially Observed Data - Opening the Closed-World Assumption</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Indiana University<a name='Indiana University'></a>, TU Dortmund<a name='TU Dortmund'></a></td>
+<td class='title'>Structure Learning with Hidden Data in Relational Domains</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/EM_SRL12.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/EM_SRL12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Understanding Tables in Context Using Standard NLP Toolkits</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/jointable-acl.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/jointable-acl.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Towards High-Throughput Gibbs Sampling at Scale: A Study across Storage Managers</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/elementary_sigmod.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/elementary_sigmod.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Scaling Inference for Markov Logic via Dual Decomposition</td>  <td class='link'><a href='ftp://ftp.cs.wisc.edu/machine-learning/shavlik-group/niu.icdm12.pdf' class='external' target='_blank'>ftp://ftp.cs.wisc.edu/machine-learning/shavlik-group/niu.icdm12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Parallel Stochastic Gradient Algorithms for Large-Scale Matrix Completion</td>  <td class='link'><a href='http://www.optimization-online.org/DB_FILE/2011/04/3012.pdf' class='external' target='_blank'>http://www.optimization-online.org/DB_FILE/2011/04/3012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Hazy: Making it Easier to Build and Maintain Big-data Analytics</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2431055' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2431055</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Big Data versus the Crowd: Looking for Relationships in All the Right Places</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/acl2012.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/acl2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Elementary: Large-scale Knowledge-base Construction via Machine Learning and Statistical Inference</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/elementary_journal.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/elementary_journal.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>DeepDive: Web-scale Knowledge-base Construction using Statistical Learning and Inference</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/deepdive_vlds.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/deepdive_vlds.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Optimizing Statistical Information Extraction Programs Over Evolving Text</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/crflex-icde12.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/crflex-icde12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Toward a Noncommutative Arithmetic-Geometric Mean Inequality: Conjectures, Case-studies, and Consequences</td>  <td class='link'><a href='http://www.optimization-online.org/DB_HTML/2012/02/3367.html' class='external' target='_blank'>http://www.optimization-online.org/DB_HTML/2012/02/3367.html</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Factoring Nonnegative Matrices with Linear Programs</td>  <td class='link'><a href='http://pages.cs.wisc.edu/~brecht/papers/12.Bit.EtAl.HOTT.pdf' class='external' target='_blank'>http://pages.cs.wisc.edu/~brecht/papers/12.Bit.EtAl.HOTT.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a>, Others<a name='Others'></a></td>
+<td class='title'>Building an Entity-Centric Stream Filtering Test Collection for TREC 2012</td>  <td class='link'><a href='http://trec.nist.gov/pubs/trec21/papers/KBA.OVERVIEW.pdf' class='external' target='_blank'>http://trec.nist.gov/pubs/trec21/papers/KBA.OVERVIEW.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, Stanford University<a name='Stanford University'></a>, University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Understanding Cardinality Estimation using Entropy Maximization</td>  <td class='link'><a href='http://www.cs.stanford.edu/~chrismre/papers/TODS_max_ent_models_CRC.pdf' class='external' target='_blank'>http://www.cs.stanford.edu/~chrismre/papers/TODS_max_ent_models_CRC.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) University of Wisconsin - Madison<a name='(WiscTeam) University of Wisconsin - Madison'></a>, University of California - Berkeley<a name='University of California - Berkeley'></a>, Indiana University<a name='Indiana University'></a></td>
+<td class='title'>Learning Relational Structure for Temporal Relation Extraction</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/TemporalIE_StaRAI12.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/TemporalIE_StaRAI12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(WiscTeam) Wake Forest University<a name='(WiscTeam) Wake Forest University'></a>, SRI<a name='SRI'></a>, Indiana University<a name='Indiana University'></a></td>
+<td class='title'>Initial Empirical Evaluation of Anytime Lifted Belief Propagation</td>  <td class='link'><a href='http://homes.soic.indiana.edu/natarasr/Papers/ALBP_StaRAI12.pdf' class='external' target='_blank'>http://homes.soic.indiana.edu/natarasr/Papers/ALBP_StaRAI12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Bar Ilan University<a name='Bar Ilan University'></a>, CUNY<a name='CUNY'></a></td>
+<td class='title'>Efficient Implementation of Beam-Search Incremental Parsers</td>  <td class='link'><a href='http://acl.cs.qc.edu/papers/fastbeam.pdf' class='external' target='_blank'>http://acl.cs.qc.edu/papers/fastbeam.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CMUCS<a name='CMUCS'></a></td>
+<td class='title'>A Structured Distributional Semantic Model for Event Co-reference</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-2083.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-2083.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CMUCS<a name='CMUCS'></a></td>
+<td class='title'>A Structured Distributional Semantic Model: Integrating Structure with Semantics</td>  <td class='link'><a href='http://aclweb.org/anthology/W/W13/W13-3203.pdf' class='external' target='_blank'>http://aclweb.org/anthology/W/W13/W13-3203.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CMUCS<a name='CMUCS'></a></td>
+<td class='title'>Events are Not Simple: Identity, Non-Identity, and Quasi-Identity</td>  <td class='link'><a href='http://aclweb.org/anthology/W/W13/W13-1203.pdf' class='external' target='_blank'>http://aclweb.org/anthology/W/W13/W13-1203.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CMUCS<a name='CMUCS'></a></td>
+<td class='title'>Programming with Personalized PageRank: A Locally Groundable First-Order Probabilistic Logic</td>  <td class='link'><a href='http://sites.google.com/site/inferning12/' class='external' target='_blank'>http://sites.google.com/site/inferning12/</a></td>
+</tr>
+<tr>
+  <td class='team'>CMUCS<a name='CMUCS'></a></td>
+<td class='title'>Story-Level Inference and Gap Filling to Improve Machine Reading</td>  <td class='link'><a href='http://www.isi.edu/~hans/publications/FLAIRS12.pdf' class='external' target='_blank'>http://www.isi.edu/~hans/publications/FLAIRS12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia Dept of CS<a name='Columbia Dept of CS'></a>, Columbia CCLS<a name='Columbia CCLS'></a></td>
+<td class='title'>Written Dialog and Social Power: Manifestations of Different Types of Power in Dialog Behavior</td>  <td class='link'><a href='http://aclweb.org/anthology/I/I13/I13-1025.pdf' class='external' target='_blank'>http://aclweb.org/anthology/I/I13/I13-1025.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia Dept of CS<a name='Columbia Dept of CS'></a>, Columbia CCLS<a name='Columbia CCLS'></a></td>
+<td class='title'>Automatic Extraction of Social Networks from Literary Text: A Case Study on Alice In Wonderland</td>  <td class='link'><a href='http://www.cs.columbia.edu/~apoorv/Homepage/Publications_files/MAIN.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/~apoorv/Homepage/Publications_files/MAIN.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia Dept of CS<a name='Columbia Dept of CS'></a>, Columbia CCLS<a name='Columbia CCLS'></a></td>
+<td class='title'>SINNET: Social Network Extractor from Text</td>  <td class='link'><a href='http://www.aclweb.org/anthology/I/I13/I13-2009.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/I/I13/I13-2009.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Columbia NLP: Sentiment Detection of Subjective Phrases in Social Media</td>  <td class='link'><a href='http://www.aclweb.org/anthology/S/S13/S13-2079.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/S/S13/S13-2079.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a>, Rensselaer Polytechnic institute<a name='Rensselaer Polytechnic institute'></a>, George Washington University<a name='George Washington University'></a></td>
+<td class='title'>Linking Tweets to News: A Framework to Enrich Short Text Data in Social Media</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-1024.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-1024.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a>, University of the Basque Country<a name='University of the Basque Country'></a>, George Washington University<a name='George Washington University'></a></td>
+<td class='title'>*SEM 2013 shared task: Semantic Textual Similarity</td>  <td class='link'><a href='http://aclweb.org/anthology/S/S13/S13-1004.pdf' class='external' target='_blank'>http://aclweb.org/anthology/S/S13/S13-1004.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a></td>
+<td class='title'>Minibatch and Parallelization for Online Large Margin Structured Learning</td>  <td class='link'><a href='http://acl.cs.qc.cuny.edu/~kzhao/papers/minibatch.pdf' class='external' target='_blank'>http://acl.cs.qc.cuny.edu/~kzhao/papers/minibatch.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a></td>
+<td class='title'>Optimal Incremental Parsing via Best-First Dynamic Programming</td>  <td class='link'><a href='http://acl.cs.qc.edu/~kzhao/papers/bestfirst_dp.pdf' class='external' target='_blank'>http://acl.cs.qc.edu/~kzhao/papers/bestfirst_dp.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a></td>
+<td class='title'>Detecting Laughter and Filled Pauses Using Syllable-based Features</td>  <td class='link'><a href='http://speech.cs.qc.cuny.edu/pubs/Detecting-Laughter-and-Filled-Pauses-Using-Syllable-based-Features.pdf' class='external' target='_blank'>http://speech.cs.qc.cuny.edu/pubs/Detecting-Laughter-and-Filled-Pauses-Using-Syllable-based-Features.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a></td>
+<td class='title'>Sure, I Did The Right Thing: A System for Sarcasm Detection in Speech</td>  <td class='link'><a href='http://speech.cs.qc.cuny.edu/pubs/rakov2013sarcasm.pdf' class='external' target='_blank'>http://speech.cs.qc.cuny.edu/pubs/rakov2013sarcasm.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a></td>
+<td class='title'>Let Me Finish: Automatic Conflict Detection Using Speaker Overlap</td>  <td class='link'><a href='http://speech.cs.qc.cuny.edu/pubs/LetMeFinish2013Grezes.pdf' class='external' target='_blank'>http://speech.cs.qc.cuny.edu/pubs/LetMeFinish2013Grezes.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a>, Google<a name='Google'></a></td>
+<td class='title'>Online Learning for Inexact Hypergraph Search</td>  <td class='link'><a href='http://www.ryanmcd.com/papers/inexactHypergraphEMNLP2013.pdf' class='external' target='_blank'>http://www.ryanmcd.com/papers/inexactHypergraphEMNLP2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>ICT<a name='ICT'></a>, CUNY<a name='CUNY'></a>, IBM<a name='IBM'></a></td>
+<td class='title'>Max-Violation Perceptron and Forced Decoding for Scalable MT Training</td>  <td class='link'><a href='http://acl.cs.qc.edu/~lhuang/papers/maxforce.pdf' class='external' target='_blank'>http://acl.cs.qc.edu/~lhuang/papers/maxforce.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>IHMC<a name='IHMC'></a></td>
+<td class='title'>Topical Positioning: A New Method for Predicting Opinion Changes in Conversation.</td>  <td class='link'><a href='http://www.mpi-sws.org/~cristian/LASM_2013_files/LASM/pdf/LASM05.pdf' class='external' target='_blank'>http://www.mpi-sws.org/~cristian/LASM_2013_files/LASM/pdf/LASM05.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>IHMC<a name='IHMC'></a></td>
+<td class='title'>CASTLE: Crowd-Assisted System for Textual Labeling & Extraction</td>  <td class='link'><a href='http://dsr.cise.ufl.edu/wp-content/uploads/2013/09/castleHCOMP13.pdf' class='external' target='_blank'>http://dsr.cise.ufl.edu/wp-content/uploads/2013/09/castleHCOMP13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>LDC<a name='LDC'></a></td>
+<td class='title'>Annotation Trees: LDC's Customizable, Extensible, Scalable Annotation Infrastructure</td>  <td class='link'><a href='https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-annotation-trees.pdf' class='external' target='_blank'>https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-annotation-trees.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Oregon State University<a name='Oregon State University'></a></td>
+<td class='title'>Output Space Search for Structured Prediction</td>  <td class='link'><a href='http://icml.cc/discuss/2012/587.html' class='external' target='_blank'>http://icml.cc/discuss/2012/587.html</a></td>
+</tr>
+<tr>
+  <td class='team'>Oregon State University<a name='Oregon State University'></a></td>
+<td class='title'>HC-Search: Learning Heuristics and Cost Functions for Structured Prediction</td>  <td class='link'><a href='http://www.aaai.org/ocs/index.php/AAAI/AAAI13/paper/view/6429' class='external' target='_blank'>http://www.aaai.org/ocs/index.php/AAAI/AAAI13/paper/view/6429</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a></td>
+<td class='title'>Detecting Community Evolution and Leadership Roles during Emergencies</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a></td>
+<td class='title'>RPI-BLENDER TAC-KBP2013 Knowledge Base Population System Description</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a></td>
+<td class='title'>Evolution of Communities on Twitter and the Role of their Leaders during Emergencies</td>  <td class='link'><a href='http://nlp.cs.rpi.edu/paper/eventsocial.pdf' class='external' target='_blank'>http://nlp.cs.rpi.edu/paper/eventsocial.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a></td>
+<td class='title'>Tackling Representation, Annotation and Classification Challenges for Temporal Knowledge Base Population</td>  <td class='link'><a href='http://link.springer.com/article/10.1007%2Fs10115-013-0675-1' class='external' target='_blank'>http://link.springer.com/article/10.1007%2Fs10115-013-0675-1</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, CUNY<a name='CUNY'></a></td>
+<td class='title'>Joint Event Extraction via Structured Prediction with Global Features</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-1008.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-1008.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, Google<a name='Google'></a></td>
+<td class='title'>Expanding Microblog Context to Enhance Disambiguation to Wikipedia</td>  <td class='link'><a href='http://aclweb.org/anthology//C/C12/C12-1028.pdf' class='external' target='_blank'>http://aclweb.org/anthology//C/C12/C12-1028.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, IBM<a name='IBM'></a>, UIUC<a name='UIUC'></a>, NEU<a name='NEU'></a></td>
+<td class='title'>Resolving Entity Morphs in Censored Data</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-1107.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-1107.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, ISI<a name='ISI'></a></td>
+<td class='title'>Curating and Contextualizing Twitter Stories to Assist with Social Newsgathering</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2449424' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2449424</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, UIUC<a name='UIUC'></a></td>
+<td class='title'>Constructing Topical Hierarchies in Heterogeneous Information Networks</td>  <td class='link'><a href='http://nlp.cs.rpi.edu/paper/icdm13.pdf' class='external' target='_blank'>http://nlp.cs.rpi.edu/paper/icdm13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, UIUC<a name='UIUC'></a></td>
+<td class='title'>EventCube: Multi-Dimensional Search and Mining of Structured and Text Data</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2487575.2487718' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2487575.2487718</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, CUNY<a name='CUNY'></a></td>
+<td class='title'>CUNY_BLENDER TAC-KBP2012 Entity Linking System and Slot Filling Validation System</td>  <td class='link'><a href='http://www.nist.gov/tac/publications/2012/participant.papers/Blender_CUNY.proceedings.pdf' class='external' target='_blank'>http://www.nist.gov/tac/publications/2012/participant.papers/Blender_CUNY.proceedings.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, HIT<a name='HIT'></a></td>
+<td class='title'>Combining Social Cognitive Theories with Linguistic Features for Multi-genre Sentiment Analysis</td>  <td class='link'><a href='http://aclweb.org/anthology/Y/Y12/Y12-1013.pdf' class='external' target='_blank'>http://aclweb.org/anthology/Y/Y12/Y12-1013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, SRI<a name='SRI'></a></td>
+<td class='title'>Name-aware Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P13/P13-1059.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P13/P13-1059.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, SRI<a name='SRI'></a>, IBM<a name='IBM'></a></td>
+<td class='title'>Joint Bilingual Name Tagging for Parallel Corpora</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2398506' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2398506</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, UIUC<a name='UIUC'></a></td>
+<td class='title'>Exploring and Inferring User-User Pseudo-Friendship for Sentiment Analysis with Heterogeneous Networks</td>  <td class='link'><a href='http://knowledgecenter.siam.org/159SDM/1' class='external' target='_blank'>http://knowledgecenter.siam.org/159SDM/1</a></td>
+</tr>
+<tr>
+  <td class='team'>RPI<a name='RPI'></a>, UIUC<a name='UIUC'></a>, BBN<a name='BBN'></a>, ARL<a name='ARL'></a></td>
+<td class='title'>Tweet Ranking based on Heterogeneous Networks</td>  <td class='link'><a href='http://aclweb.org/anthology//C/C12/C12-1076.pdf' class='external' target='_blank'>http://aclweb.org/anthology//C/C12/C12-1076.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/SocherEtAl_EMNLP2013.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/SocherEtAl_EMNLP2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Semantic Parsing on Freebase from Question-Answer Pairs</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/semparseEMNLP13.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/semparseEMNLP13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>These Guys Are Teaching Computers How to Think Like People</td>  <td class='link'><a href='http://www.wired.com/wiredenterprise/2013/10/nasent-deep-learning/' class='external' target='_blank'>http://www.wired.com/wiredenterprise/2013/10/nasent-deep-learning/</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Stanford researchers to open-source model they say has nailed sentiment analysis</td>  <td class='link'><a href='http://gigaom.com/2013/10/03/stanford-researchers-to-open-source-model-they-say-has-nailed-sentiment-analysis/' class='external' target='_blank'>http://gigaom.com/2013/10/03/stanford-researchers-to-open-source-model-they-say-has-nailed-sentiment-analysis/</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Generating Recommendation Dialogs by Extracting Information from User Reviews</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/yelp-acl2013.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/yelp-acl2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Parsing With Compositional Vector Grammars</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/SocherBauerManningNg_ACL2013.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/SocherBauerManningNg_ACL2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Better Word Representations with Recursive Neural Networks for Morphology</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/conll13_morpho.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/conll13_morpho.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Philosophers are Mortal: Inferring the Truth of Unseen Facts</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/angeli2013-conll-truth.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/angeli2013-conll-truth.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>The Life and Death of Discourse Entities: Identifying Singleton Mentions</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/discourse-referent-lifespans.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/discourse-referent-lifespans.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Same Referent, Different Words: Unsupervised Mining of Opaque Coreferent Mentions</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/coref-dictionary.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/coref-dictionary.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Learning New Facts From Knowledge Bases With Neural Tensor Networks and Semantic Word Vectors</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/ChenSocherManningNg_ICLR2013_DeepKB.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/ChenSocherManningNg_ICLR2013_DeepKB.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Convolutional-Recursive Deep Learning for 3D Object Classification</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/SocherHuvalBhatManningNg_NIPS2012.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/SocherHuvalBhatManningNg_NIPS2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Joint Entity and Event Coreference Resolution across Documents</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/emnlp2012-coref.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/emnlp2012-coref.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Learning Constraints for Consistent Timeline Extraction</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/dmcc-emnlp-2012.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/dmcc-emnlp-2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Semantic Compositionality Through Recursive Matrix-Vector Spaces</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/SocherHuvalManningNg_EMNLP2012.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/SocherHuvalManningNg_EMNLP2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Multi-instance Multi-label Learning for Relation Extraction</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/emnlp2012-mimlre.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/emnlp2012-mimlre.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Probabilistic Finite State Machines for Regression-based MT Evaluation</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/wang-manning-emnlp12.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/wang-manning-emnlp12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Improving Word Representations via Global Context and Multiple Word Prototypes</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/HuangACL12.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/HuangACL12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Stanford: Probabilistic Edit Distance Metrics for STS</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/wang-cer-sts12.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/wang-cer-sts12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>SPEDE: Probabilistic Edit Distance Metrics for MT Evaluation</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/wang-manning-wmt12.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/wang-manning-wmt12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>Parsing Time: Learning to Interpret Time Expressions</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/2012-naacl-temporal.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/2012-naacl-temporal.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>SUTIME: A Library for Recognizing and Normalizing Time Expressions</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/lrec2012-sutime.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/lrec2012-sutime.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Google Research<a name='Google Research'></a></td>
+<td class='title'>Breaking Out of Local Optima with Count Transforms and Model Recombination: A Study in Grammar Induction</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/ee.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/ee.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Google Research<a name='Google Research'></a></td>
+<td class='title'>Bootstrapping Dependency Grammar Inducers from Incomplete Sentence Fragments via Austere Models</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/wabisabi.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/wabisabi.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Google Research<a name='Google Research'></a></td>
+<td class='title'>Three Dependency-and-Boundary Models for Grammar Induction</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/dbm.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/dbm.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Google Research<a name='Google Research'></a></td>
+<td class='title'>Capitalization Cues Improve Dependency Grammar Induction</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/capitalization.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/capitalization.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Harbin Institute of Technology<a name='Harbin Institute of Technology'></a></td>
+<td class='title'>Effective Bilingual Constraints for Semi-supervised Learning of Named Entity Recognizers</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/aaai13-wang.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/aaai13-wang.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Harbin Institute of Technology<a name='Harbin Institute of Technology'></a></td>
+<td class='title'>Named Entity Recognition with Bilingual Constraints</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/naacl13-che.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/naacl13-che.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Harbin Institute of Technology<a name='Harbin Institute of Technology'></a></td>
+<td class='title'>A Comparison of Chinese Parsers for Stanford Dependencies</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/stanford_dependencies_chinese.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/stanford_dependencies_chinese.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Harbin Institute of Technology<a name='Harbin Institute of Technology'></a></td>
+<td class='title'>Stanford's System for Parsing the English Web</td>  <td class='link'><a href='http://nlp.stanford.edu/pubs/mcclosky-sancl-12.pdf' class='external' target='_blank'>http://nlp.stanford.edu/pubs/mcclosky-sancl-12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a>, University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Structured Message Passing</td>  <td class='link'><a href='http://auai.org/uai2013/prints/papers/91.pdf' class='external' target='_blank'>http://auai.org/uai2013/prints/papers/91.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Recognizing Textual Entailment</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/645' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/645</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>An NLP Curator (or: How I Learned to Stop Worrying and Love NLP Pipelines)</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/703' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/703</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Structured Learning with Constrained Conditional Models</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/698' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/698</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Unified Expectation Maximization</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/693' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/693</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Illinois-Coref: The UI System in the CoNLL-2012 Shared Task</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/701' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/701</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>On Amortizing Inference Cost for Structured Prediction</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/695' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/695</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Joint Inference for Event Timeline Construction</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/692' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/692</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Efficient Decomposed Learning for Structured Prediction</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/699' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/699</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>A Framework for Tuning Posterior Entropy in Unsupervised Learning</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/700' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/700</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Efficient Pattern-Based Time Series Classification on GPU</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/713' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/713</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Modeling Semantic Relations Expressed by Prepositions</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/726' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/726</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>The University of Illinois System in the CoNLL-2013 Shared Task</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/731' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/731</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Margin-based Decomposed Amortized Inference</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/729' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/729</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Multi-core Structural SVM Training</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/728' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/728</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Relational Inference for Wikification</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/736' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/736</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>A Constrained Latent Variable Model for Coreference Resolution</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/732' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/732</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>Illinois Cognitive Computation Group UI-CCG TAC 2013 Entity Linking and Slot Filler Validation Systems</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a></td>
+<td class='title'>ILLINOISNLPCLOUD: Text Analytics Services in the Cloud</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a>, Bar Ilan University<a name='Bar Ilan University'></a>, University of Rome Tor Vergata<a name='University of Rome Tor Vergata'></a></td>
+<td class='title'>Recognizing Textual Entailment: Models and Applications</td>  <td class='link'><a href='http://cogcomp.cs.illinois.edu/page/publication_view/730' class='external' target='_blank'>http://cogcomp.cs.illinois.edu/page/publication_view/730</a></td>
+</tr>
+<tr>
+  <td class='team'>UIUC<a name='UIUC'></a>, LDC<a name='LDC'></a></td>
+<td class='title'>Annotating Textual Inference</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Latent Relation Representations for Universal Schemas</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-947' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-947</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Dynamic Knowledge-Base Alignment for Coreference Resolution</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-954' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-954</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Unsupervised Relation Discovery with Sense Disambiguation</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-867' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-867</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>A Discriminative Hierarchical Model for Fast Coreference at Large Scale</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-869' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-869</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Monte Carlo MCMC: Efficient Inference by Approximate Sampling</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-888' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-888</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Monte Carlo MCMC: Efficient Inference by Sampling Factors</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-894' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-894</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Probabilistic Databases of Universal Schema</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-896' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-896</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Learning to speed up MAP decoding with column generation</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-897' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-897</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Improving NLP through Marginalization of Hidden Syntactic Structure</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-907' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-907</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>MAP Inference in Chains using Column Generation</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-915' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-915</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Across-Document Neighborhood Expansion: UMass at TAC KBP 2012 Entity Linking</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-917' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-917</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Massachusetts Amherst<a name='University of Massachusetts Amherst'></a></td>
+<td class='title'>Relation Extraction with Matrix Factorization and Universal Schemas</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-948' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-948</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a></td>
+<td class='title'>Fast Joint Compression and Summarization via Graph Cuts</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a></td>
+<td class='title'>Document Summarization via Guided Sentence Compression</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a></td>
+<td class='title'>Using Denoising Autoencoder for Emotion Recognition</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a></td>
+<td class='title'>A Preliminary Study of Cross-lingual Emotion Recognition from Speech: Automatic Classification versus Human Perception</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a></td>
+<td class='title'>Using Supervised Bigram-based ILP for Extractive Summarization</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Dallas<a name='University of Texas - Dallas'></a></td>
+<td class='title'>Disfluency Detection Using Multi-step Stacked Learning</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>A sequential repetition model for improved disfluency detection</td>  <td class='link'><a href='http://www.bibsonomy.org/bibtex/b67c92313f3cd785db73f0bf5cf1d8ca' class='external' target='_blank'>http://www.bibsonomy.org/bibtex/b67c92313f3cd785db73f0bf5cf1d8ca</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Discriminative Learning of Sum-Product Networks</td>  <td class='link'><a href='http://books.nips.cc/papers/files/nips25/NIPS2012_1484.pdf' class='external' target='_blank'>http://books.nips.cc/papers/files/nips25/NIPS2012_1484.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Learning the Structure of Sum-Product Networks</td>  <td class='link'><a href='http://jmlr.org/proceedings/papers/v28/gens13.pdf' class='external' target='_blank'>http://jmlr.org/proceedings/papers/v28/gens13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Tractable Probabilistic Knowledge Bases with Existence Uncertainty</td>  <td class='link'><a href='http://csweb.cs.wfu.edu/~snataraj/StaRAI/Papers/1.pdf' class='external' target='_blank'>http://csweb.cs.wfu.edu/~snataraj/StaRAI/Papers/1.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Harvesting Parallel News Streams to Generate Paraphrases of Event Relations</td>  <td class='link'><a href='http://www.cs.washington.edu/ai/clzhang/emnlp2013.pdf' class='external' target='_blank'>http://www.cs.washington.edu/ai/clzhang/emnlp2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Joint Coreference Resolution and Named-Entity Linking with Multi-pass Sieves</td>  <td class='link'><a href='http://homes.cs.washington.edu/~weld/papers/hajishirzi-emnlp13.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~weld/papers/hajishirzi-emnlp13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Extracting Meronyms for a Biology Knowledge Base using Distant Supervision</td>  <td class='link'><a href='http://homes.cs.washington.edu/~weld/papers/ling-akbc13.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~weld/papers/ling-akbc13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Fine-Grained Entity Recognition</td>  <td class='link'><a href='http://www.cs.washington.edu/ai/pubs/ling-aaai12.pdf' class='external' target='_blank'>http://www.cs.washington.edu/ai/pubs/ling-aaai12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Learning Distributions over Logical Forms for Referring Expression Generation</td>  <td class='link'><a href='http://homes.cs.washington.edu/~lsz/papers/faz-emnlp13.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~lsz/papers/faz-emnlp13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Scaling Semantic Parsers with On-the-fly Ontology Matching</td>  <td class='link'><a href='http://homes.cs.washington.edu/~lsz/papers/kcaz-emnlp13.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~lsz/papers/kcaz-emnlp13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Modeling Missing Data in Distant Supervision for Information Extraction</td>  <td class='link'><a href='http://homes.cs.washington.edu/~lsz/papers/rzme-tacl13.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~lsz/papers/rzme-tacl13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Weakly Supervised Learning of Semantic Parsers for Mapping Instructions to Actions</td>  <td class='link'><a href='http://homes.cs.washington.edu/~lsz/papers/az-tacl13.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~lsz/papers/az-tacl13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Paraphrase-Driven Learning for Open Question Answering</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/acl-2013-fader.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/acl-2013-fader.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Generating Coherent Event Schemas at Scale</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/emnlp-2013-niranjan.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/emnlp-2013-niranjan.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Towards Coherent Multi-Document Summarization</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/naacl-hlt-2013-christensen.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/naacl-hlt-2013-christensen.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Entity Linking at Web Scale</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/akbc-wekex12-lin.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/akbc-wekex12-lin.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Rel-grams: A Probabilistic Model of Relations in Text</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/akbc-wekex12-balasubramanian.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/akbc-wekex12-balasubramanian.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>No Noun Phrase Left Behind: Detecting and Typing Unlinkable Entities</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/emnlp12-lin.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/emnlp12-lin.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Open Language Learning for Information Extraction</td>  <td class='link'><a href='http://turing.cs.washington.edu/papers/emnlp12-mausam.pdf' class='external' target='_blank'>http://turing.cs.washington.edu/papers/emnlp12-mausam.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>USC/Information Sciences Institute<a name='USC/Information Sciences Institute'></a>, LDC<a name='LDC'></a>, Colorado<a name='Colorado'></a>, CMUCS<a name='CMUCS'></a></td>
+<td class='title'>Abstract Meaning Representation for Sembanking</td>  <td class='link'><a href='http://www.isi.edu/natural-language/amr/a.pdf' class='external' target='_blank'>http://www.isi.edu/natural-language/amr/a.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>Learning to 'Read Between the Lines' Using Baysian Logic</td>  <td class='link'><a href='http://www.cs.utexas.edu/users/ml/papers/raghavan.acl12.pdf' class='external' target='_blank'>http://www.cs.utexas.edu/users/ml/papers/raghavan.acl12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>Towards a semantics for distributional representations</td>  <td class='link'><a href='http://aclweb.org/anthology-new/W/W13/W13-0109.pdf' class='external' target='_blank'>http://aclweb.org/anthology-new/W/W13/W13-0109.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>Intentionality was only alleged: On adjective-noun composition in distributional semantics</td>  <td class='link'><a href='http://www.newdesign.aclweb.org/anthology/W/W13/W13-0104.pdf' class='external' target='_blank'>http://www.newdesign.aclweb.org/anthology/W/W13/W13-0104.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>Montague Meets Markov: Deep Semantics with Probabilistic Logical Form</td>  <td class='link'><a href='http://www.cs.utexas.edu/users/ml/papers/beltagy.starsem13.pdf' class='external' target='_blank'>http://www.cs.utexas.edu/users/ml/papers/beltagy.starsem13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>Online Inference-Rule Learning from Natural-Language Extractions</td>  <td class='link'><a href='http://www.cs.utexas.edu/users/ml/papers/raghavan.starai13.pdf' class='external' target='_blank'>http://www.cs.utexas.edu/users/ml/papers/raghavan.starai13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>A Formal Approach to Linking Logical Form and Vector-Space Lexical Semantics</td>  <td class='link'><a href='http://www.cs.utexas.edu/users/ml/papers/garrette.compmeaning4.pdf' class='external' target='_blank'>http://www.cs.utexas.edu/users/ml/papers/garrette.compmeaning4.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Pittsburgh<a name='University of Pittsburgh'></a></td>
+<td class='title'>Benefactive/Malefactive Event and Writer Attitude Annotation</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P13/P13-2022.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P13/P13-2022.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of North Texas<a name='University of North Texas'></a>, Cornell University<a name='Cornell University'></a>, University of Pittsburgh<a name='University of Pittsburgh'></a>, Google<a name='Google'></a>, LCC<a name='LCC'></a></td>
+<td class='title'>CPN-CORE: A Text Semantic Similarity System Infused with Opinion Knowledge</td>  <td class='link'><a href='http://aclweb.org/anthology/S/S13/S13-1032.pdf' class='external' target='_blank'>http://aclweb.org/anthology/S/S13/S13-1032.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of North Texas<a name='University of North Texas'></a></td>
+<td class='title'>Sentiment Analysis of Online Spoken Reviews</td>  <td class='link'><a href='http://www.cs.unt.edu/~rada/papers/perezrosas.interspeech.2013.pdf' class='external' target='_blank'>http://www.cs.unt.edu/~rada/papers/perezrosas.interspeech.2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of North Texas<a name='University of North Texas'></a>, USC/ICT<a name='USC/ICT'></a></td>
+<td class='title'>Utterance-Level Multimodal Sentiment Analysis</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-1096.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-1096.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Cornell University<a name='Cornell University'></a></td>
+<td class='title'>Negative Deceptive Opinion Spam</td>  <td class='link'><a href='http://aclweb.org/anthology//N/N13/N13-1053.pdf' class='external' target='_blank'>http://aclweb.org/anthology//N/N13/N13-1053.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Cornell University<a name='Cornell University'></a></td>
+<td class='title'>TopicSpam: a Topic-Model-Based Approach for Spam Detection</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P13/P13-2039.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P13/P13-2039.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Cornell University<a name='Cornell University'></a></td>
+<td class='title'>Joint Inference for Fine-grained Opinion Extraction</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P13/P13-1161.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P13/P13-1161.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Cornell University<a name='Cornell University'></a></td>
+<td class='title'>Identifying Manipulated Offerings on Review Portals</td>  <td class='link'><a href='http://aclweb.org/anthology//D/D13/D13-1199.pdf' class='external' target='_blank'>http://aclweb.org/anthology//D/D13/D13-1199.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>PARMA: A Predicate Argument Aligner</td>  <td class='link'><a href='http://cs.jhu.edu/~vandurme/papers/parma-a-predicate-argument-linker.pdf' class='external' target='_blank'>http://cs.jhu.edu/~vandurme/papers/parma-a-predicate-argument-linker.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>PPDB: The Paraphrase Database</td>  <td class='link'><a href='http://cs.jhu.edu/~vandurme/papers/PPDB-The-Paraphrase-Database_NAACL_2013.pdf' class='external' target='_blank'>http://cs.jhu.edu/~vandurme/papers/PPDB-The-Paraphrase-Database_NAACL_2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Johns Hopkins University<a name='Johns Hopkins University'></a></td>
+<td class='title'>Evaluating Progress in Probabilistic Programming through Topic Models</td>  <td class='link'>Not Yet Published</td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Search' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Clear</button><div id='sftwrTable'><h2>Software</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Publications</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
