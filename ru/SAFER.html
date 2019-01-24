@@ -1,0 +1,898 @@
+
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/safer-warfighter-communications' class='programlink'>Safer Warfighter Communications (SAFER)</a></h2>
+<div class='left-paragraph'><p>The SAFER program seeks to develop technology to enable safe, resilient communications over the Internet, particularly in situations in which third parties attempt to discover the identity or location of the end users, or block communications. The program also seeks to provide the technological quality of service required to support applications such as electronic mail, instant messaging, voice over IP, and other media that promote effective communication.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/mr-michael-walker' class='programmanagerlink'>Mr. Michael Walker</a></p><p>Contact: <a href='mailto:michael.walker@darpa.mil'>michael.walker@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Software</a></li><li><a href='#tabs1'>Publications</a></li><li><a href='#tabs300'>Search</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Search' id='search0'/><button class='clear_button' id='clear0'>Clear</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Project</th><th>Category</th><th>Code</th><th>Description</th><th>License</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Georgetown University <a href='#Georgetown University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://security.cs.georgetown.edu/projects/senser/' class='external' target='_blank'>Senser</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://security.cs.georgetown.edu/code/senser-0.1.tar.gz class='external' target='_blank'>https://security.cs.georgetown.edu/code/senser-0.1.tar.gz</a> </td>
+ <td class=description> A distributed consensus system for web sites that uses distributed sensors to render a majority view. (Java) </td>
+<td class=license><span>custom, BSD-based</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Georgetown University <a href='#Georgetown University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://security.cs.georgetown.edu/projects/tortoise/' class='external' target='_blank'>Tortoise</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://security.cs.georgetown.edu/lib/tortoise/tortoise-tor-0.2.1.28.patch class='external' target='_blank'>https://security.cs.georgetown.edu/lib/tortoise/tortoise-tor-0.2.1.28.patch</a> </td>
+ <td class=description> Tortoise is a system for rate limiting Tor at its ingress points in order to increase the bandwidth capacity of the network and consequently improve the experience of interactive web users. The system incurs little penalty for interactive web users, while significantly decreasing the throughput for filesharers. These techniques provide incentives to filesharers to configure their Tor clients to also relay traffic, which in turn improves the network's overall performance. Large-scale emulation results indicate that interactive users will achieve a significant speedup if even a small fraction of clients opt to run relays. (C) </td>
+<td class=license><span>Released as patch to Tor; follows Tor license at https://gitweb.torproject.org/tor.git?a=blob_plain;hb=HEAD;f=LICENSE</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Naval Research Laboratory <a href='#Naval Research Laboratory' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://shadow.github.io/' class='external' target='_blank'>Shadow</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://github.com/shadow/shadow.git class='external' target='_blank'>https://github.com/shadow/shadow.git</a> </td>
+ <td class=description> Shadow is an open source, discrete-event network simulator that runs real applications such as Tor. Shadow combines the accuracy of emulation with the efficiency and control of simulation, achieving the best of both approaches. Shadow links to real application software and natively executes the application code during simulation, providing faithful experiments and accurate results. Shadow models and runs distributed networks using these applications on a single Linux machine, easing experiment management. (C) </td>
+<td class=license><span>BSDv3, modified for U.S. Government work</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Naval Research Laboratory <a href='#Naval Research Laboratory' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://torps.github.io/' class='external' target='_blank'>The Tor Path Simulator (TorPS)</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://github.com/torps/torps.git class='external' target='_blank'>https://github.com/torps/torps.git</a> </td>
+ <td class=description> TorPS provides efficient simulation of path selection over time by Tor. For each sample, it uses measurements of the Tor network and of user behavior to simulate how a Tor client selects relays. The use of actual measurements and an accurate reimplementation of Tor's path-selection algorithms provides highly realistic behavior. Also, a TorPS simulation is much faster than the Tor client itself, which allows for millions of simulations over periods of many months, allowing for an accurate estimation of the full probability distribution of client behavior over time. (Python/C/Bash) </td>
+<td class=license><span>Custom (specific to U.S. Government work)</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='https://github.com/torproject/chutney' class='external' target='_blank'>Chutney</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/chutney.git class='external' target='_blank'>https://gitweb.torproject.org/chutney.git</a> </td>
+ <td class=description> A tool to spin up a local Tor network for automated testing. (Python/sh) </td>
+<td class=license><span>Tiny</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='http://fscked.org/projects/torflow' class='external' target='_blank'>TorFlow</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/torflow.git class='external' target='_blank'>https://gitweb.torproject.org/torflow.git</a> </td>
+ <td class=description> TorFlow is a set of Python scripts for interacting with and measuring the Tor network. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='http://libevent.org' class='external' target='_blank'>Libevent</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://github.com/libevent/libevent class='external' target='_blank'>https://github.com/libevent/libevent</a> </td>
+ <td class=description> A software library that provides asynchronous event notification. It is the network library underlying Tor, obfsproxy, and others. We co-maintain it with Niels Provos. (C) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Python pluggable transport library</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/pluggable-transports/pyptlib.git class='external' target='_blank'>https://gitweb.torproject.org/pluggable-transports/pyptlib.git</a> </td>
+ <td class=description> Python pluggable transport library. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Go pluggable transport library</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/pluggable-transports/goptlib.git class='external' target='_blank'>https://gitweb.torproject.org/pluggable-transports/goptlib.git</a> </td>
+ <td class=description> Go pluggable transport library. (Go) </td>
+<td class=license><span onmouseover='licenseInfo("CC0", "Creative Commons Public Domain Dedication", "https://creativecommons.org/publicdomain/zero/1.0/", "This free software license dedicates its covered projects to the public domain.", event)'>CC0</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Websocket pluggable transport</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/pluggable-transports/websocket.git/tree class='external' target='_blank'>https://gitweb.torproject.org/pluggable-transports/websocket.git/tree</a> </td>
+ <td class=description> Client and server for transporting traffic over websocket. (Go) </td>
+<td class=license><span onmouseover='licenseInfo("CC0", "Creative Commons Public Domain Dedication", "https://creativecommons.org/publicdomain/zero/1.0/", "This free software license dedicates its covered projects to the public domain.", event)'>CC0</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Obfsproxy</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/pluggable-transports/obfsproxy.git class='external' target='_blank'>https://gitweb.torproject.org/pluggable-transports/obfsproxy.git</a> </td>
+ <td class=description> A framework to make it easy to write pluggable transports for Tor. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Flashproxy</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/flashproxy.git class='external' target='_blank'>https://gitweb.torproject.org/flashproxy.git</a> </td>
+ <td class=description> A tool that uses Websockets to turn browsers into Tor bridges. (Python/Go) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>StegoTorus</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/stegotorus.git/ class='external' target='_blank'>https://gitweb.torproject.org/stegotorus.git/</a> </td>
+ <td class=description> HTTP-based pluggable transport for Tor that implements flow chop reassembly. (C/C++) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>BridgeDB</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/bridgedb.git class='external' target='_blank'>https://gitweb.torproject.org/bridgedb.git</a> </td>
+ <td class=description> Service to distribute Tor bridge addresses via https, gmail, etc. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Onionoo</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/onionoo.git class='external' target='_blank'>https://gitweb.torproject.org/onionoo.git</a> </td>
+ <td class=description> A backend database and scripts to organize and serve the Tor metrics data. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Metrics</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/metrics-db.git class='external' target='_blank'>https://gitweb.torproject.org/metrics-db.git</a> </td>
+ <td class=description> Scripts to store, serve, analyze, and visualize Tor network data. (Java/Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Atlas</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/atlas.git class='external' target='_blank'>https://gitweb.torproject.org/atlas.git</a> </td>
+ <td class=description> A web application to display Tor relay information. (JavaScript/CSS) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv2", "BSD 2-Clause Simplified or FreeBSD license", "http://opensource.org/licenses/BSD-2-Clause", "This is the original BSD license without the advertising (and one other) clause. It is a permissive, non-copyleft-free license.", event)'>BSDv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='https://github.com/makepanic/globe' class='external' target='_blank'>Globe</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://github.com/makepanic/globe.git class='external' target='_blank'>https://github.com/makepanic/globe.git</a> </td>
+ <td class=description> A web application to display Tor relay and bridge information. (JavaScript/CSS) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Compass</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/compass.git class='external' target='_blank'>https://gitweb.torproject.org/compass.git</a> </td>
+ <td class=description> A web application to display Tor relay and network statistics. (Python/JavaScript) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Tor Browser</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/builders/tor-browser-bundle.git class='external' target='_blank'>https://gitweb.torproject.org/builders/tor-browser-bundle.git</a> </td>
+ <td class=description> A fork of Firefox that fixes many privacy issues. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Tor Browser Button</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/torbutton.git class='external' target='_blank'>https://gitweb.torproject.org/torbutton.git</a> </td>
+ <td class=description> A Firefox extension to lock down Tor Browser Bundle for application-level privacy. (JavaScript/XUL) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Vidalia</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/vidalia.git class='external' target='_blank'>https://gitweb.torproject.org/vidalia.git</a> </td>
+ <td class=description> The older Qt-based Tor controller (obsoleted by Tor Launcher). (C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Tor Launcher</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/tor-launcher.git class='external' target='_blank'>https://gitweb.torproject.org/tor-launcher.git</a> </td>
+ <td class=description> A Firefox extension to launch and manage Tor in Tor Browser Bundle. (JavaScript/XUL) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>HTTPS Everywhere</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/https-everywhere.git class='external' target='_blank'>https://gitweb.torproject.org/https-everywhere.git</a> </td>
+ <td class=description> A Firefox and Chrome extension that encrypts your communications with many major websites, making your browsing more secure. (JavaScript/XUL) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'>Torbirdy</td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://gitweb.torproject.org/torbirdy.git class='external' target='_blank'>https://gitweb.torproject.org/torbirdy.git</a> </td>
+ <td class=description> An extension like Torbutton but for Thunderbird (for securing email over Tor). (JavaScript/XUL/C++) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv2", "BSD 2-Clause Simplified or FreeBSD license", "http://opensource.org/licenses/BSD-2-Clause", "This is the original BSD license without the advertising (and one other) clause. It is a permissive, non-copyleft-free license.", event)'>BSDv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='https://github.com/guardianproject/ChatSecureAndroid' class='external' target='_blank'>ChatSecure</a></td>  <td class=category>Networking</td>
+  <td class=code> <a href=https://github.com/guardianproject/ChatSecureAndroid.git class='external' target='_blank'>https://github.com/guardianproject/ChatSecureAndroid.git</a> </td>
+ <td class=description> A secure chat client for Android with push-to-talk Tor support. (Java) </td>
+<td class=license><span>AL</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Search' id='search1'/><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a></td>
+<td class='title'>OSS: Using Online Scanning Services for Censorship Circumvention</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, The Tor Project<a name='The Tor Project'></a></td>
+<td class='title'>Evading Censorship with Browser-Based Proxies</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, SRI<a name='SRI'></a></td>
+<td class='title'>StegoTorus: a camouflage proxy for the Tor anonymity system</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>The most dangerous code in the world: validating SSL certificates in non-browser software</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, SRI<a name='SRI'></a></td>
+<td class='title'>Bootstrapping Communications into an Anti-Censorship System</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Hang With Your Buddies to Resist Intersection Attacks</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/buddies.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/buddies.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Stanford University<a name='Stanford University'></a>, Yale University<a name='Yale University'></a></td>
+<td class='title'>Ensuring High-Quality Randomness in Cryptographic Key Generation</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/randomness.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/randomness.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Proactively Accountable Anonymous Messaging in Verdict</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/verdict.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/verdict.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>The Parrot is Dead: Observing Unobservable Network Communications</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/parrot-slides.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/parrot-slides.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a></td>
+<td class='title'>I want my voice to be heard: IP over Voice-over-IP for unobservable censorship circumvention</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/freewave.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/freewave.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Dissent in Numbers: Making Strong Anonymity Scale</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/osdi12.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/osdi12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Crypto-Book: An Architecture for Privacy Preserving Online Identities</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Conscript Your Friends into Larger Anonymity Sets with JavaScript</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/wpes13.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/wpes13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Reducing Latency in Tor Circuits with Unordered Delivery</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/foci13.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/foci13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Welcome to the World of Human Rights: Please Make Yourself Uncomfortable</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/creds13.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/creds13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Scavenging for Anonymity with BlogDrop (Abstract)</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/provpriv12.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/provpriv12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Scalable Anonymous Group Communication in the Anytrust Model</td>  <td class='link'><a href='http://dedis.cs.yale.edu/dissent/papers/eurosec12.pdf' class='external' target='_blank'>http://dedis.cs.yale.edu/dissent/papers/eurosec12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>The Design and Implementation of the A3 Application-Aware Anonymity Platform</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/a3-journal.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/a3-journal.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Validating Web Content with Senser</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/senser.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/senser.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a>, Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Users Get Routed: Traffic Correlation on Tor By Realistic Adversaries</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/users-get-routed.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/users-get-routed.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Distributed Time-aware Provenance</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/dtap-vldb13.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/dtap-vldb13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>An Empirical Evaluation of Relay Selection in Tor</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/tor-relaystudy.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/tor-relaystudy.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Privacy-Aware Message Exchanges for Geographically Routed Human Movement Networks</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/aviv-esorics12-privacy.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/aviv-esorics12-privacy.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a>, University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Collaborative Red Teaming for Anonymity System Evaluation</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/collaborative.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/collaborative.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Private and Verifiable Interdomain Routing Decisions</td>  <td class='link'><a href='https://security.cs.georgetown.edu/~msherr/papers/pvr.pdf' class='external' target='_blank'>https://security.cs.georgetown.edu/~msherr/papers/pvr.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Rutgers University<a name='Rutgers University'></a>, Yale University<a name='Yale University'></a></td>
+<td class='title'>Accountability as an Interface between Cybersecurity and Social  Science</td>  <td class='link'><a href='http://www.cspri.seas.gwu.edu/uploads/2/1/3/2/21324690/research_summary.pdf' class='external' target='_blank'>http://www.cspri.seas.gwu.edu/uploads/2/1/3/2/21324690/research_summary.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a>, University of Texas - Austin<a name='University of Texas - Austin'></a>, Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Probabilistic  Analysis of Onion Routing in a Black-box Model</td>  <td class='link'><a href='http://ohmygodel.com/publications/or-blackbox-tissec.pdf' class='external' target='_blank'>http://ohmygodel.com/publications/or-blackbox-tissec.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>How Low Can You Go: Balancing Performance with Anonymity in Tor</td>  <td class='link'><a href='http://www-users.cs.umn.edu/~jansen/papers/howlow-pets2013.pdf' class='external' target='_blank'>http://www-users.cs.umn.edu/~jansen/papers/howlow-pets2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a>, The Tor Project<a name='The Tor Project'></a>, Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Methodically Modeling the Tor Network</td>  <td class='link'><a href='http://www-users.cs.umn.edu/~jansen/papers/tormodel-cset2012.pdf' class='external' target='_blank'>http://www-users.cs.umn.edu/~jansen/papers/tormodel-cset2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Shadow: Running Tor in a Box for Accurate and Efficient Experimentation</td>  <td class='link'><a href='http://www-users.cs.umn.edu/~jansen/papers/shadow-ndss2012.pdf' class='external' target='_blank'>http://www-users.cs.umn.edu/~jansen/papers/shadow-ndss2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>LIRA: Lightweight Incentivized Routing for Anonymity</td>  <td class='link'><a href='http://www-users.cs.umn.edu/~jansen/papers/lira-ndss2013.pdf' class='external' target='_blank'>http://www-users.cs.umn.edu/~jansen/papers/lira-ndss2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Throttling Tor Bandwidth Parasites</td>  <td class='link'><a href='http://www-users.cs.umn.edu/~jansen/papers/throttling-sec2012.pdf' class='external' target='_blank'>http://www-users.cs.umn.edu/~jansen/papers/throttling-sec2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Onions for Sale: Putting Privacy on the Market</td>  <td class='link'><a href='http://www-users.cs.umn.edu/~jansen/papers/onionsforsale-fc2013.pdf' class='external' target='_blank'>http://www-users.cs.umn.edu/~jansen/papers/onionsforsale-fc2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Texas - Austin<a name='University of Texas - Austin'></a>, Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Privacy-Preserving Data Exploration in Genome-Wide Association Studies</td>  <td class='link'><a href='http://ohmygodel.com/publications/gwas-data-exploration-kdd13.pdf' class='external' target='_blank'>http://ohmygodel.com/publications/gwas-data-exploration-kdd13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a>, University of Texas - Austin<a name='University of Texas - Austin'></a>, Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Security Analysis of Accountable Anonymous Group Communication in Dissent</td>  <td class='link'><a href='http://ohmygodel.com/publications/dissent-analysis-techreport.pdf' class='external' target='_blank'>http://ohmygodel.com/publications/dissent-analysis-techreport.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Practical Vulnerabilities of the Tor Anonymity Network</td>  <td class='link'><a href='http://www.syverson.org/tor-vulnerabilities-iccs.pdf' class='external' target='_blank'>http://www.syverson.org/tor-vulnerabilities-iccs.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></td>
+<td class='title'>Why I'm not an entropist</td>  <td class='link'><a href='http://www.syverson.org/entropist-final.pdf' class='external' target='_blank'>http://www.syverson.org/entropist-final.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>MIT<a name='MIT'></a></td>
+<td class='title'>Melting Pad: A Secure Efficiently Decodable Coding Scheme</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>California Institute of Technology<a name='California Institute of Technology'></a></td>
+<td class='title'>Practical Improvements to Bus-Based Strategies for Reliable Anonymous Networking</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>California Institute of Technology<a name='California Institute of Technology'></a></td>
+<td class='title'>Peer-to-peer anonymous networking using coding</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Georgia Tech<a name='Georgia Tech'></a>, Princeton University<a name='Princeton University'></a></td>
+<td class='title'>A Slick Control Plane for Network Middleboxes</td>  <td class='link'><a href='http://conferences.sigcomm.org/sigcomm/2013/papers/hotsdn/p147.pdf' class='external' target='_blank'>http://conferences.sigcomm.org/sigcomm/2013/papers/hotsdn/p147.pdf</a></td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Search' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Clear</button><div id='sftwrTable'><h2>Software</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Publications</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>

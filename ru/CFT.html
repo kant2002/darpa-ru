@@ -1,0 +1,1367 @@
+﻿
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - Open Catalog</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header><h2>Cyber Fast Track (CFT)</h2><div class='left-paragraph'><p>The Cyber Fast Track (CFT) program sought revolutionary advances in cyber science, devices, and systems through low-cost, quick-turnaround projects.  To achieve this, CFT engaged a novel performer base many of whom were new to government contracting.  From August 2011 to April 2013 the program attracted 550 proposal submissions, of which 90 percent were from performers that had never previously worked with the government, and awarded 135 contracts. <p>
+    <p class="programComplete">Program Complete</p>
+      <p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Software</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Search' id='search0'/><button class='clear_button' id='clear0'>Clear</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Team</th><th>Project</th><th>Category</th><th>Code</th><th>Description</th><th>License</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Rogue Networks</td>
+ <td width='202' class='project'><a href='http://www.linkedin.com/pub/eric-fiterman/43/483/509' class='external' target='_blank'>Methods for detecting malicious web server traffic</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Monitors HTTP traffic for indications of attempted script injection by monitoring various meta data about HTTP sessions. Also stores malicious activity events in an external IP reputation-based scoring system, allowing member organizations to share threat information. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Immunity Federal Services, LLC</td>
+ <td width='202' class='project'>Combining Expert Knowledge and Symbolic</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A system that uses human-assisted automated techniques to accurately and quickly find exploitable vulnerabilities in Windows Drivers using a static code analysis prototype. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Dr. Charlie Miller</td>
+ <td width='202' class='project'>Risk and Vulnerability Assessment of Near Field Communication in Smartphones</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Risk and Vulnerability Assessment of Near Field Communication (NFC) in Smartphones via an automated test framework. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Secure Ideas, LLC</td>
+ <td width='202' class='project'><a href='https://www.secureideas.com/' class='external' target='_blank'>MobiSec Live Environment Mobile Testing Framework</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A live, Linux-based testing environment that is preconfigured and installed with all the tools and configurations needed to perform security assessments and testing of mobile platforms. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Assured Information Security, Inc.</td>
+ <td width='202' class='project'><a href='http://www.ainfosec.com/' class='external' target='_blank'>MoRE: Measurement of Dynamic Code: MoRE (Measurement of Running Executable)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Determines whether an application or system kernel has been modified by an attacker by performing integrity checks of applications executing in memory using a custom Windows Page Fault Handler or VMX hypervisor. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Peak Security, Inc.</td>
+ <td width='202' class='project'><a href='http://www.peaksecurityinc.com/home.html' class='external' target='_blank'>TinyLANE - Mobile Hardware Endpoint Security for Individuals</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A hand-held device that provides secure point-to-point communications and offers the user anonymous Internet access through the TOR framework. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Strategic Cyber</td>
+ <td width='202' class='project'><a href='http://blog.strategiccyber.com/2012/08/03/cortana-real-time-collaborative-hacking-with-bots/' class='external' target='_blank'>Cortana: A Language to Control and Automate Cyber Capabilities</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A domain-specific language that empowers users to automate, customize and extend the Metasploit and Armitage toolset -- enabling security evaluation and validation of defensive measures of an organization. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Digital Operatives</td>
+ <td width='202' class='project'><a href='http://digitaloperatives.com/' class='external' target='_blank'>Subversive Storage</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A Mass Storage Device (MSD) controller that cannot be imaged via standard forensic techniques, can detect the host Operating System, and alter data in transit to the host. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Critical Assets Labs</td>
+ <td width='202' class='project'><a href='http://www.criticalassets.com/ca-labs/' class='external' target='_blank'>Proposal for PIN Pad Defender Development</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A device that detects physical skimming attacks on ATM machines through the use of HD video and Infrared sensors. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Peripety Labs</td>
+ <td width='202' class='project'><a href='http://www.peripetylabs.com/' class='external' target='_blank'>Securing programs by automated detection and correction of vulnerabilities</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A software tool that  automatically detects and corrects security vulnerabilities in C/C++ programs (especially those that are integer-related). </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Duo Security</td>
+ <td width='202' class='project'><a href='https://www.duosecurity.com/' class='external' target='_blank'>Practical Vulnerability Assessment on Consumer Mobile Devices</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A Vulnerability Assessment Framework for smart phones consisting of a mobile application and a cloud service. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Thoughtcrime Labs</td>
+ <td width='202' class='project'><a href='http://www.thoughtcrime.org/' class='external' target='_blank'>Convergence: A secure, agile, distributed replacement for Certificate Authorities</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A secure, agile, distributed replacement for the Certificate Authority system using numerous Notaries to create a configurable quorum, asserting the site's identity. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Galois, Inc.</td>
+ <td width='202' class='project'><a href='http://corp.galois.com/' class='external' target='_blank'>CyberChaff: Using Distraction for Network Protection</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An environment consisting of hundreds of virtual machines that will defend against cyber attacks. Cyberchaff will consist of lightweight virtualized targets that will delay and confuse attackers from their intended target and act as an Early Detection System. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Deja vu Security</td>
+ <td width='202' class='project'><a href='http://www.dejavusecurity.com/' class='external' target='_blank'>Hungarian Ham</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A source code monitoring and filtration system designed to mine source-code commit history and detect malicious code check-ins to source repositories masked as an authorized developer. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Exception Technologies, LLC</td>
+ <td width='202' class='project'><a href='http://www.exceptiontech.com/' class='external' target='_blank'>Reuse Oriented Obfuscation</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An obfuscation technique based on the concept of gadgets and return-and jump-oriented programming techniques, thwarting attempts to reverse engineer applications by transforming them into a series of linked together gadgets executed in a runtime environment. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>GoToTheBoard</td>
+ <td width='202' class='project'><a href='http://www.gototheboard.com/' class='external' target='_blank'>GPU Assisted Malware Detection for Mobile Devices</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Leverages the graphics processor unit (GPU) for detecting malicious attacks and creates a GPU-Assisted Malware Detector for Mobile Devices. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Subreption, LLC</td>
+ <td width='202' class='project'><a href='http://subreption.com/' class='external' target='_blank'>Proactive defenses for operating system dynamic memory allocators</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides the design and development of a solid set of security mitigations for dynamic memory allocators, applied to protect operating systems and software internals against exploitation of unknown and known vulnerabilities. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Digital Operatives</td>
+ <td width='202' class='project'><a href='http://digitaloperatives.com/' class='external' target='_blank'>Process Attribution In Network Traffic (PAINT)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A network packet analysis capability built upon Wireshark that enables malware threat detection and advanced malware analysis by inking packets sent and received to the source and destination application. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Selective Intellect, LLC</td>
+ <td width='202' class='project'><a href='http://selectiveintellect.com/' class='external' target='_blank'>Firecracker: Framework for Vulnerability Assessment of Systems with High End GPUs</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A GPU-based cryptovirus framework that performs attacker-centric threat modeling. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SecureIT Consulting Group, Inc.</td>
+ <td width='202' class='project'><a href='http://www.secureit.com/' class='external' target='_blank'>Needle in a Stack of PINs - An ARM Instrumentation Framework for the Embedded Generation</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An open-source tool kit for leveraging the principles and capabilities of dynamic analysis, including performance monitoring, error diagnosing, and stack trace logging. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Malice Afterthought</td>
+ <td width='202' class='project'><a href='http://maliceafterthought.com/' class='external' target='_blank'>Reticle: Leaderless Command and Control</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A command, control, and communications (C3) platform for very-low-cost computers to receive tasking, exchange data, and change missions on the fly. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Robert Seger</td>
+ <td width='202' class='project'>Hatchet</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An easy to use tool that allows for exploration and manipulation of the low level details of an operating system including event handling and kernel interfacing without having specialized knowledge of the operating system. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ReversingLabs</td>
+ <td width='202' class='project'><a href='http://www.reversinglabs.com/' class='external' target='_blank'>FDF - File Disinfection Framework</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An advanced virtual machine for polymorphic malware disinfection. It will enable dynamic binary analysis on top of a static analysis framework by giving developers full control over detection, disinfection and repair of affected files. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Dan Farmer</td>
+ <td width='202' class='project'><a href='http://www.fish2.com/security/' class='external' target='_blank'>Sealing and Testing Virtual Systems</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> This project will provide an automated security testing sandbox for virtual systems. Target Practice (TP) will integrate and leverage four security tools; NMAP, Nessus, MetaSploit, and Bastille, to provide testing of virtual machines. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Narf Industries, LLC</td>
+ <td width='202' class='project'><a href='https://narfindustries.com/' class='external' target='_blank'>Private Information Retrieval for Network Monitoring</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A secure network monitoring and alerting system, Enciphered Observation Network (EON), more completely protecting the confidentiality of signatures and the alerts generated on a remote sensor in an untrusted environment. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Bulb Security, LLC</td>
+ <td width='202' class='project'><a href='http://www.bulbsecurity.com/' class='external' target='_blank'>Smartphone Penetration Testing Framework</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A Smartphone Penetration testing framework which will allow users to assess the security of mobile devices. This project offers the development and deployment of agents for post exploitation remote control, information gathering, and privilege escalation. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Pwnie Express</td>
+ <td width='202' class='project'><a href='https://www.pwnieexpress.com/' class='external' target='_blank'>The Power Strip Backdoor</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Testing tool that provides secure remote access to target networks through a variety of covert TCP/IP channels, or via 3G/GSM cellular wherever available. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Great Scott Gadgets</td>
+ <td width='202' class='project'><a href='https://greatscottgadgets.com/' class='external' target='_blank'>HackRF: A Low Cost Software Defined Radio Platform</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An open-source low-cost Software Defined Radio (SDR) transceiver platform that allows a single piece of equipment to implement virtually any wireless technology (WiFi, Bluetooth, GSM, ZigBee, etc.). </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hidden Layer, LLC</td>
+ <td width='202' class='project'>A Machine Learning Approach for Source Code Vulnerability Detection</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An application of supervised machine learning to automatically detect attack surfaces, or vulnerabilities, in source code for C programs. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Five Directions, Inc.</td>
+ <td width='202' class='project'><a href='http://www.fivedirections.com/Site/Five_Directions.html' class='external' target='_blank'>Semantic Visualization of Security Data</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A semantic ontology, framework, and  browser for managing security data and providing results superior to traditional SIEM and log correlation. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Least Authority Enterprises</td>
+ <td width='202' class='project'><a href='https://leastauthority.com/' class='external' target='_blank'>Redundant Array of Independent Clouds</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A system for provider-independent security across several commodity cloud data storage services accessible via a common web interface. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Recursion Ventures</td>
+ <td width='202' class='project'><a href='http://www.recursion.com/' class='external' target='_blank'>Impact of EM Injection on Digital Imaging Technologies</a></td>  <td class=category>Study</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A study identifying potential vulnerabilities in digital imaging technologies including CCD (charge-coupled device) and APS (active-pixel sensor). </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Step Three Research</td>
+ <td width='202' class='project'>ASLRx, a Defense Against Remote Code Execution Vulnerabilities</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A prototype ASLRx, an OS-patch extension of ASLR to defend against all types of remote code execution vulnerabilities. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>RST Professional Services, LLC</td>
+ <td width='202' class='project'>Defensive Live-Response Capabilities with MetaSploit</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Leverages tools often used by attackers, such as Metasploit, for rapid file-system analysis in support of discovering and understanding unknown malicious code. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stealth Software Technologies, Inc.</td>
+ <td width='202' class='project'><a href='http://www.stealthsoftwareinc.com/' class='external' target='_blank'>Secure Two-Party Satellite Collisions Checking (SETSAT)</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A design for the implementation, testing, and demonstration of a secure two-party satellite collision checking system. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Digital Forensics Solutions, LLC</td>
+ <td width='202' class='project'><a href='http://www.digitalforensicssolutions.com/index.shtml' class='external' target='_blank'>Forensic Capabilities for Embedded Files Systems</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Forensic tool which explores properties of flash file systems to determine  which artifacts correlate to file system activities and how long deleted data stays present in these file systems. Includes a library which can be easily integrated into currently existing tools. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>HellaSec, LLC</td>
+ <td width='202' class='project'><a href='http://www.linkedin.com/in/michaelngagnon' class='external' target='_blank'>Beer Garden: Reversing the Asymmetry of High-Density Attacks</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Defends net-centric web applications from zero-day high-density attacks through the use of admission control and worker process management. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>The Honeynet Project</td>
+ <td width='202' class='project'><a href='http://www.honeynet.org/about' class='external' target='_blank'>Web Application Honeypot</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Generates an extensible attack surface to adversaries who are attempting to gain unauthorized access to computer systems and data that allows the defender to identify malicious requests and gather and report detailed information on possible threats. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Microtask, Ltd.</td>
+ <td width='202' class='project'><a href='http://www.microtask.com/' class='external' target='_blank'>Proposal to Develop Split Field Processing Technology</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A new type of document data protection that captures sensitive data from documents and separates individual fields of information into fragments that are transmitted securely, which greatly reduces the risk of compromise. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Cody Nicewanner</td>
+ <td width='202' class='project'><a href='http://www.linkedin.com/pub/cody-nicewanner/4a/a98/aaa' class='external' target='_blank'>Censoring the Pointer</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Targets zero-day threats by nullifying an exploit's ability to execute its shell code. It fills the gap between ASLR and DEP by preventing non-executable scripts from dynamically locating system structures which are needed to properly execute an exploit. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Trail of Bits</td>
+ <td width='202' class='project'><a href='http://www.trailofbits.com/' class='external' target='_blank'>Using Concolic Execution To Measure A Program's Susceptibility to Code-Reuse Attacks</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Develops a system to measure a program's susceptibility to code-reuse ROP exploits. The system accepts a collection of program modules as input and presents a score of the re-usability of that set of modules as output. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Red Balloon Security</td>
+ <td width='202' class='project'><a href='http://www.redballoonsecurity.com/' class='external' target='_blank'>FRAK: Firmware Reverse Analysis Konsole (FRAK)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> General framework for unpacking, analyzing, modifying, and repacking the firmware images of arbitrary proprietary embedded devices. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Digital Forensics Solutions, LLC</td>
+ <td width='202' class='project'><a href='http://www.digitalforensicssolutions.com/index.shtml' class='external' target='_blank'>Automatically Generated Regular Expression- Based Signatures for File Carving</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> File carving is used to recover files which are no longer accessible, whether due to deletion, file system corruption, or drive re-formatting. This project proposes a new method of file carving to mitigate the inherent limitations of existing tools. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Armatum Networks</td>
+ <td width='202' class='project'><a href='http://armatum.com/' class='external' target='_blank'>Full Spectrum Intrusion Detection</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Analysis and visualization of HTTP and HTTPS traffic at the network perimeter to identify traffic consistent with malware Command and Control (C2) channel characteristics. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Capitol Hill Consultants, LLC</td>
+ <td width='202' class='project'><a href='http://capitolhillconsultants.com/' class='external' target='_blank'>M2M Risk Assessment Project (MRAP)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Evaluates the current M2M threat surface and identifies common security weaknesses that may lead to unacceptable risks in embedded systems and critical infrastructure. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Security Works, LLC</td>
+ <td width='202' class='project'>Defending the Hypervisor</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides a framework for testing the various interfaces between Virtual Machines (VM) and the underlying virtualization layer (i.e., Hypervisor) on the physical host. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SecureIT Consulting Group, Inc.</td>
+ <td width='202' class='project'><a href='http://www.secureit.com/' class='external' target='_blank'>Poor Man's Control Flow Integrity (PMCFI)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Establishes legitimate execution paths at the function level and aborts execution if attempts are made to modify flow. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Safely, Inc.</td>
+ <td width='202' class='project'>Secure Surrogate Cloud Browsing</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> This project provides a system that offloads vulnerability prone operations, such as JavaScript execution and image parsing, from client browsers to surrogate browsers running in the cloud. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>215LAB LLC</td>
+ <td width='202' class='project'>Netoko</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> This is a a cloud-based ecosystem for developing network security applications. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Secure Ideas, LLC</td>
+ <td width='202' class='project'><a href='https://www.secureideas.com/' class='external' target='_blank'>Securing HTML5 Assessment Resource Kit (SHARK)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Researches and identifies potentially vulnerable HTML5 features and develops filtering rules that can be used by open source security products as an effective countermeasure against browser attacks. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>AcceSys Technology</td>
+ <td width='202' class='project'><a href='http://www.accesys.org/' class='external' target='_blank'>SCATEboard - Side Channel Attack Test Evaluation Board</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides a hardware platform to evaluate cryptographic algorithm exposures in embedded systems to Side Channel Attacks (SCAs). </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Bitlackeys Security</td>
+ <td width='202' class='project'><a href='http://www.bitlackeys.org/' class='external' target='_blank'>Linux VMA Monitor (LVM)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Detects user space memory infections in a Linux environment. Its unique heuristics analyzer identifies complex and atypical infections and produces an unpacked executable version for analysis. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Bunnie Studios, LLC</td>
+ <td width='202' class='project'><a href='http://www.bunniestudios.com/' class='external' target='_blank'>Enabling Distributed Network Protocols</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Creates a high-performance, low-cost device that is based on infrastructure descended from mobile phone lineage and optimized for use in secure distributed networks. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>KoreLogic, Inc.</td>
+ <td width='202' class='project'><a href='https://www.korelogic.com/tools.html#mastiff' class='external' target='_blank'>MASTIFF</a></td>  <td class=category>Software</td>
+  <td class=code> <a href=https://git.korelogic.com/mastiff.git/ class='external' target='_blank'>https://git.korelogic.com/mastiff.git/</a> </td>
+ <td class=description> A static analysis framework that automates the extraction of characteristics of malware and allows rapid technique development through the use of plug-ins. </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span>, <span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Sutajio Ko-Usagi Pte Ltd.</td>
+ <td width='202' class='project'><a href='http://www.kosagi.com/w/index.php?title=Main_Page' class='external' target='_blank'>Know Thy Media</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Investigates the embedded microcontrollers in Secure Digital (SD) cards, develops a hardware/software protocol analysis tool which logs raw transactions to the NAND device and compares them against commands issued by the SD interface. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>GoToTheBoard</td>
+ <td width='202' class='project'><a href='http://www.gototheboard.com/' class='external' target='_blank'>Taking it From the Source - Integrating Dynamic Security</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Couples static and dynamic analysis tasks into a set of tools that heightens a mainstream developer's awareness of code vulnerabilities and security issues in his or her day-to-day-programming. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Island Peak Software</td>
+ <td width='202' class='project'>Submarine: Capturing the Unencrypted BIOS</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Uses virtual machine logging, together with a virtualized BIOS device, to capture the unencrypted, uncompressed machine code of any Basic Input/Output System (BIOS). </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Deja vu Security</td>
+ <td width='202' class='project'><a href='http://www.dejavusecurity.com/' class='external' target='_blank'>Godel's Gourd: Next Generation Fuzzer</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Creates an automated testing framework that triggers and detects logical constraint violations that are undetectable with current fuzzing technology. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Galois, Inc.</td>
+ <td width='202' class='project'><a href='http://corp.galois.com/' class='external' target='_blank'>Ditto: A Tunable Network Stack for Confounding the Enemy</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Creates a network stack that can be tuned by the system administrator to emulate whatever operating system the administrator chooses, complicating the adversary's decision process and decreasing the effectiveness of available adversary attack tools. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Digital Operatives</td>
+ <td width='202' class='project'><a href='http://digitaloperatives.com/' class='external' target='_blank'>HAVOC - Halting Attacks Via Obstructing Configurations</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Explores configuration changes that impact the performance of malware components, developing tools for randomly changing those configuration parameters to exploit weaknesses in malware. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Subreption, LLC</td>
+ <td width='202' class='project'><a href='http://subreption.com/' class='external' target='_blank'>SAFEDROID: High Assurance Computing for Mobile Devices</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Enforces memory protections and reduces system predictability, alters core components of the operating system (OS), and provides a defensive in-depth solution against zero-day attacks. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Digital Operatives</td>
+ <td width='202' class='project'><a href='http://digitaloperatives.com/' class='external' target='_blank'>AERIAL - Automatic Entity Recognition Identifying Antennas Locally</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Uses automatic visual recognition on mobile phones to detect and classify antennas used in communications networks even in the absence of Radio Frequency emissions. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Dan Farmer</td>
+ <td width='202' class='project'><a href='http://www.fish2.com/security/' class='external' target='_blank'>IPMI: Underbelly of Servers</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Offers a collection of simple tools to address the security concerns inherent with IPMI technology, raise awareness of IPMI's security weaknesses, identify configuration errors on IPMI clients, and propose a threshold for acceptability. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Tulsa</td>
+ <td width='202' class='project'><a href='https://www.utulsa.edu/' class='external' target='_blank'>Heavy Truck Electronic Network Security Analysis Framework (Truck-In-A-Box)</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An inexpensive and lightweight hardware framework for analysis of heavy truck engine control modules, evaluating attack surfaces and demonstrate security vulnerabilities on commercial vehicles at a reduced cost. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SecureIT Consulting Group, Inc.</td>
+ <td width='202' class='project'><a href='http://www.secureit.com/' class='external' target='_blank'>ProcessGossip: A Side Channel Information Fusion Framework</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Detects information leaks and identifies side channel vulnerabilities in the Android Operating System. Whole classes of exploits that previously relied on privilege escalation to capture secrets can potentially operate by simply listening to unprivileged information. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>VULNEX</td>
+ <td width='202' class='project'><a href='http://www.vulnex.com/' class='external' target='_blank'>Compiler Security and Binary Defenses Breakdown</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides resources that simplify the process of building secure software, assists developers in using the security settings offered by compilers, and provides analysts with a tool for scanning binaries for vulnerabilities caused by insufficient compiler security configuration. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Narf Industries, LLC</td>
+ <td width='202' class='project'><a href='https://narfindustries.com/' class='external' target='_blank'>Kensa: An Anti-Reverse Engineering System</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Kensa provides alerting mechanisms for tamper detection, encrypted patching, and reverse engineering mitigation. The system protects proprietary-critical binaries against adversaries' efforts by thwarting and reporting reverse engineering attempts. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Dr. Charlie Miller</td>
+ <td width='202' class='project'>A Framework for Automotive Computing Systems</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides a framework for programmers to develop and execute code to monitor and control the various embedded systems in computerized automobiles. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Upstanding Hackers, LLC</td>
+ <td width='202' class='project'><a href='https://www.facebook.com/pages/Upstanding-Hackers-LLC/382321051847526' class='external' target='_blank'>Hammer: The Science of Insecurity - Source Development Recognizers and Validators</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Facilitates the secure creation of input recognizers, or validators, that use mathematical proofs and verify correct code operation with minimum impact on development time and effort. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Zentific, LLC</td>
+ <td width='202' class='project'><a href='http://www.zentific.com/' class='external' target='_blank'>Zazen: Virtual Machine Introspection to Detect and Protect</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Intrusion detection and prevention system that monitors and protects virtual machines from an external perspective. This tool repairs malicious modifications designed to hijack normal kernel and program operation when possible. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Selective Intellect, LLC</td>
+ <td width='202' class='project'><a href='http://selectiveintellect.com/' class='external' target='_blank'>Bootjack: BIOS Implant Detection</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Bootjack is a configurable hardware solution that detects compromised BIOS components on Personal Computers. Bootjack scans a system, and within seconds, indicates the presence of a compromised BIOS via an alert on the external device. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Raber Hughes Technologies, LLC</td>
+ <td width='202' class='project'>Virtual Deobfuscator</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Reverse engineering tool that automates the reverse engineering of obfuscated instructions utilizing loop detection to disclose the underlying malware's original state. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>504ENSICS Labs</td>
+ <td width='202' class='project'><a href='http://www.504ensics.com/' class='external' target='_blank'>Application-Level Memory Forensics For Dalvik</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> This project researches and develops a framework to analyze the application-level memory forensics of Dalvik, the process virtual machine used by the Android operating system. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Quoc Tran</td>
+ <td width='202' class='project'>GarbledGrids: Provable and Efficient Distributed Computing Security</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A framework that protects data used in computations distributed across multiple remote machines. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Narf Industries, LLC</td>
+ <td width='202' class='project'><a href='https://narfindustries.com/' class='external' target='_blank'>Bbemu: A Baseband Emulation Framework for Vulnerability Analysis</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Integrated vulnerability testing environment for basebands, providing researchers with a flexible baseband analysis environment at communication devices that handles communication between cellular towers and cellular phones. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>JW Secure, Inc.</td>
+ <td width='202' class='project'><a href='http://www.jwsecure.com/' class='external' target='_blank'>BHT - BIOS Integrity Measurements Heuristics Tool</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Mitigates BIOS-level threats in an enterprise using TPM in a system of cloud and client components. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Northeast Information Discovery, Inc.</td>
+ <td width='202' class='project'><a href='http://neidinc.com/' class='external' target='_blank'>SLRFDL - Security Legacy Radio Frequency Data Links</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A passive Radio Frequency network intrusion prevention system for secure legacy RF communication. The system uses RF fingerprint techniques to create a white-list to allow legitimate communications while denying unauthorized devices. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Malice Afterthought</td>
+ <td width='202' class='project'><a href='http://maliceafterthought.com/' class='external' target='_blank'>NOM: Novel Object Mapping Visualization of Security Data</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides users with visual tools for examining incoming network/security data in near real-time, allowing users to understand past data using computer gaming engines that handle a huge number of data points. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Great Scott Gadgets</td>
+ <td width='202' class='project'><a href='https://greatscottgadgets.com/' class='external' target='_blank'>Physical Layer Monitoring Platform for Wired Communication Media</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provides a low-cost, portable device with pluggable capabilities that monitors high and low bandwidth wired communication protocols such as USB and HDMI at the physical layer. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MonkWorks, LLC</td>
+ <td width='202' class='project'><a href='https://github.com/monk-dot' class='external' target='_blank'>NAND-Xplore: Hiding and Finding Data with NAND Flash Error Codes</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Uses on-board NAND controller, logic gates that the flash architecture resembles, or the host operating system to hide files and programs from users and forensics software </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Trail of Bits</td>
+ <td width='202' class='project'><a href='http://www.trailofbits.com/' class='external' target='_blank'>Scalable Graph - Theoretical Analysis for Qualitative Program Security Assessment</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Leverages developments in static analysis and graph theory to build a system that automatically identifies object lifespan vulnerabilities at source code level. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Kyrus Tech, Inc.</td>
+ <td width='202' class='project'><a href='http://www.kyrus-tech.com/' class='external' target='_blank'>Dynamic Analysis Toolset for Embedded System Application</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Explores the adaptation of vulnerability research toolsets to embedded systems, providing dynamic analysis capabilities that are currently limited to researchers of non-embedded systems such as personal computers. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>504ENSICS Labs</td>
+ <td width='202' class='project'><a href='http://www.504ensics.com/' class='external' target='_blank'>Forensic Analysis of the OS X Spotlight Search Index</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Provide access to all data stored in Spotlight indexes in an offline manner by reversing the index format, discovering forensically interesting artifacts in the index, recovering deleted versions of indexes, and generating code to automate access to index data. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ReversingLabs</td>
+ <td width='202' class='project'><a href='http://www.reversinglabs.com/about/executive-team.html' class='external' target='_blank'>RDFU - Rootkit Detection Framework for UEFI</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A rootkit/malware scanner designed to detect UEFI rootkits. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Red Balloon Security</td>
+ <td width='202' class='project'><a href='http://www.redballoonsecurity.com/' class='external' target='_blank'>Defending Embedded Systems Using Autotomic Binary Structure Randomization</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Independent host-based defense for arbitrary embedded systems using the principles of defense through diversity and attack surface minimization, which will include techniques such as binary autotomy and binary structure randomization. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Milcord</td>
+ <td width='202' class='project'><a href='http://milcord.com/' class='external' target='_blank'>VPN Underground Fingerprinter Tool & Guidelines to Limit Identifying VPN Traces</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Identifies several encryption algorithms and attempts to discern patterns from the delays caused by packet loss and other artifacts of specific encrypted connections. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Inverse Limit, LLC</td>
+ <td width='202' class='project'>Project fa840</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Augments the Erlang tool chain with additional languages and tools for building verified Erlang modules and then writes software whose modules are a mixture of both traditional and verified Erlang modules. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MonkWorks, LLC</td>
+ <td width='202' class='project'><a href='https://github.com/monk-dot' class='external' target='_blank'>Clock Locking Beats - Exploring the Android Kernel and Processor Interactions</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Exploration into smartphone processor clocks, speed and voltage manipulation techniques. It catalogues various means to subvert detection of running processes on mobile devices and how to uncover them. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Great Scott Gadgets</td>
+ <td width='202' class='project'><a href='https://greatscottgadgets.com/' class='external' target='_blank'>Unambiguous Encapsulation in Error Correcting Codes</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Explores longer codes (with codewords of length greater than five bits) that have interesting encapsulation properties, such as 'nestability' useful for unambiguous encapsulation of error control codes. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>GoToTheBoard</td>
+ <td width='202' class='project'><a href='http://www.gototheboard.com/' class='external' target='_blank'>Visualization and Analysis of Machine Configuration Space</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A set of tools for visualization and analysis of a program's configuration space by using QEMU and its emulation capabilities as a means to record the executed instructions from a program. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Strategic Results</td>
+ <td width='202' class='project'><a href='http://www.strategicresults.com/' class='external' target='_blank'>Enhancing Email Messaging Security</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Software algorithms for the graphical representation of key fingerprints which will combine effective key visualization methods that are quick, accurate, and extremely difficult to defeat. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Deja vu Security</td>
+ <td width='202' class='project'><a href='http://www.dejavusecurity.com/' class='external' target='_blank'>Siren's Song</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A system for fuzzing interpreted languages such as Python, Ruby, and JavaScript in a generic way by creating links between grammar, Abstract Syntax Tree (AST), and common metaphors in languages such as instantiating an object, calling a method and setting a property. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Grier Forensics</td>
+ <td width='202' class='project'><a href='http://www.grierforensics.com/' class='external' target='_blank'>Sifting Collectors</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A sifting forensic collector which locates forensically relevant data and collects it in a forensically sound way in a fraction of the time (5-10x current speeds) and space (10-20% the size) required of traditional imaging methods. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Mercury Milestones, LLC</td>
+ <td width='202' class='project'>Program Relocator</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Software that can monitor processes and move malware to another machine. Then the malware will continue to run on the new machine with no indication that it has been moved. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Invincea Labs</td>
+ <td width='202' class='project'><a href='http://www.invincea.com/' class='external' target='_blank'>CrowdSource</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Open source automatic malware reverse engineering engine by training a machine learning based malware capability detection engine on millions of technical documents from the web. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>KoreLogic, Inc.</td>
+ <td width='202' class='project'><a href='http://www.korelogic.com/' class='external' target='_blank'>PathWell</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Enterprise-wide password complexity enforcement that significantly reduces the effectiveness of or renders useless current topology-based password cracking schemes. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Northeast Information Discovery, Inc.</td>
+ <td width='202' class='project'><a href='http://neidinc.com/' class='external' target='_blank'>A Framework for Component-Level Excitation (FCLE)</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Framework for the application of penetration testing techniques by enabling access to new system interface points by security professionals who may otherwise be unfamiliar with the necessary DSP and RF techniques. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Securisea</td>
+ <td width='202' class='project'><a href='http://www.securisea.com/' class='external' target='_blank'>Improved Vulnerability Searching in Code</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> System for hybrid analysis security testing which has reduced false negatives when searching for SQLi and XSS vulnerabilities via dataflow taint tracking compared to other existing automated tools today and demonstrated the prototype against real world web applications. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>BlueRISC Inc.</td>
+ <td width='202' class='project'><a href='http://www.bluerisc.com/' class='external' target='_blank'>Unique Software and Microcontroller on a Whim</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Automated toolkit that creates a unique microcontroller that matches the randomly synthesized encoding by retrofitting a GCC compiler containing back-end support for AVR ISA or OpenCores.org Verilog implementation of an AVR microcontroller. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Inverse Limit, LLC</td>
+ <td width='202' class='project'>GLS</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An open source GPU accelerated lattice sieve for the NFS that specifically targets the relation collection step of NFS, which is a combination of sieving and co-factorization to find smooth pairs that satisfy a particular technical property. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>504ENSICS Labs</td>
+ <td width='202' class='project'><a href='http://www.504ensics.com/' class='external' target='_blank'>A Framework for Differential Analysis of Malware in RAM</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A prototype system that will take two successive memory captures and execute a set of plugins on them to determine the differences in the captures,  providing the analyst with a browseable view of the analysis performed by the plugins. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Accuvant Federal Solutions Inc.</td>
+ <td width='202' class='project'><a href='http://www.accuvant.com/' class='external' target='_blank'>Security Explorer</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Tool to instantiate a platform for developers to ensure their binaries are protected with the latest in exploit mitigation technologies and test their sandbox implementations to quantitatively understand the actions an attacker may perform inside the sandbox. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>LEAD 82</td>
+ <td width='202' class='project'>BootFixer: Semi-automatic Aid for Windows Malware Infections and Misconfiguration</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Tool to (1) boot the Microsoft Windows machine into a safe-state, (2) gather and analyze the crucial data and (3) find and aid with removal of all potential known and unknown threats (including hidden rootkits). </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Trail of Bits</td>
+ <td width='202' class='project'><a href='http://www.trailofbits.com/' class='external' target='_blank'>MAST: Mobile Application Security Transforms</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Mobile application protection platform to armor iOS mobile applications against reverse engineering. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Tulsa</td>
+ <td width='202' class='project'><a href='https://www.utulsa.edu/' class='external' target='_blank'>Chip-Level Memory Mapping and Forensics for Heavy Truck ECM</a></td>  <td class=category>Firmware</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Identifies data-bearing components in heavy truck electronic control modules. It  will allow the repeatable method for imaging these components at the chip level in a forensically verifiable manner and map the contents of these devices to operational parameters. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MonkWorks, LLC</td>
+ <td width='202' class='project'><a href='https://github.com/monk-dot' class='external' target='_blank'>Project Burner - El telefono inteligente de fuego</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Research to understand what an attacker would have to do to physically destroy or incapacitate a device solely with kinetic software behaviors, to gain a deep understanding of that attack vector, and to develop a means of discovery and remediation. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Exception Technologies, LLC</td>
+ <td width='202' class='project'>CRUSADE Toward Symbolic Signal Synthesis for Cyber Effects Analysis</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An end-to-end RF vulnerability analysis framework capable of examining hardware and software systems for potential flaws by leveraging existing system level symbolic execution techniques. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Dr. Charlie Miller</td>
+ <td width='202' class='project'>A Platform for Automotive Network Security Research</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Tool that allows users to simulate attacks, look for vulnerabilities, explore how ECU's interact with each other, and design defenses in such a way that the exact same code will work in a real automobile. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Sutajio Ko-Usagi Pte Ltd.</td>
+ <td width='202' class='project'><a href='http://www.kosagi.com/' class='external' target='_blank'>EMP</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A mobile, extensible platform for signal measurement and protocol analysis. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Openwall, Inc.</td>
+ <td width='202' class='project'><a href='http://www.openwall.com/' class='external' target='_blank'>Scalable Password Hashing</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> An improvement to PHS and cryptographic KDF, focusing on deliberate uses of large amounts of memory (many gigabytes), which the main PHS or KDF component may treat as read-only (ROM), resulting in reduced efficiency of offline attacks. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ProvenSecure Solutions, LLC</td>
+ <td width='202' class='project'><a href='http://www.provensecure.us/' class='external' target='_blank'>A Risk Mitigation Metric for Multi-Factor Authentication Systems</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A Risk Mitigation Metric (RMM) tool that will provide continuous-scale quantitative results of representative authentication attempts. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SigBlips DSP engineering</td>
+ <td width='202' class='project'><a href='http://www.sigblips.com/' class='external' target='_blank'>Weak Modulated Signal Correlations</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A real-time weak modulated signal detection system prototype that makes use of novel correlation algorithms that will be implemented on an Intel Xeon Phi coprocessor card for real-time operation. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Dan Farmer</td>
+ <td width='202' class='project'><a href='http://www.fish2.com/security/' class='external' target='_blank'>Fait Accompli</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Software that will enable a modestly technical person to see and understand what happens when a program is executed, and in particular to observe the execution of a software installer. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Grand Idea Studio, Inc.</td>
+ <td width='202' class='project'><a href='http://www.grandideastudio.com/' class='external' target='_blank'>Research and Analysis of PCB Deconstruction Techniques</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A suite of open-source tools and techniques to assist, simplify, and automate the PCB reverse engineering process based on PCB deconstruction. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC</td>
+ <td width='202' class='project'><a href='http://www.hyperiongray.com/' class='external' target='_blank'>Web 3.0: A Distributed Web Application Spider and 3D Visualization Engine With Built-In Continuous Security</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> 3D web application visualization engine that creates a landscape view of web applications across a network that is easy to navigate, intuitive, and has real-time web application vulnerability information built into it. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Inverse Limit, LLC</td>
+ <td width='202' class='project'>Project MAIM</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A tool chain for the purposes of mining undocumented information from the x86 processor architecture. Additionally an example miner will be produced to exhibit the differences in the underlying micro-architecture of four of the five major x86 variants. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Metrix Create:Space</td>
+ <td width='202' class='project'><a href='http://www.metrixcreatespace.com/#makesomethingawesome' class='external' target='_blank'>An Inexpensive Practical Textile-Based Computing and Communications Platform</a></td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> Determines optimal materials and methods for putting low-cost low-power computing platforms into everyday clothing. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Ring0 Technologies</td>
+ <td width='202' class='project'>PIDS</td>  <td class=category>Software</td>
+  <td class=code> <a href='mailto:CFTdata@darpa.mil'>CFTdata@darpa.mil</a> </td>
+ <td class=description> A technology that will detect and prevent infiltration of sensitive or classified networks via shared power sources including Modern or recent COTS broadband PLC protocols; older COTS protocols & non-COTS protocols including both voltage and current mode modulations. </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>

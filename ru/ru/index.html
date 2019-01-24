@@ -1,0 +1,947 @@
+﻿
+<!DOCTYPE html>
+<html lang='ru'>
+<head>
+    <meta charset="utf-8">
+    <title>DARPA - Open Catalog</title>
+    <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+    <link rel='stylesheet' href='css/style_v2.css' type='text/css' />
+    <link rel='stylesheet' href='css/banner_style.css' type='text/css' />
+    <link rel='stylesheet' href='css/header_footer.css' type='text/css' />
+    <link rel='stylesheet' href='css/list_style.css' type='text/css' />
+    <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css' />
+    <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+    <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+    <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+    <script language="javascript" type='text/javascript' src="utils.js"></script>
+    <script language="javascript" type='text/javascript' src="spin.js"></script>
+    <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+    <script language="javascript" type='text/javascript' src="list.min.js"></script>
+    <!--
+     <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+     <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+     <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+     <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+     <script language="javascript" type='text/javascript' src="legend.js"></script>
+     <script language="javascript" type='text/javascript' src="axis.js"></script>
+     <script language="javascript" type='text/javascript' src="distribution.js"></script>
+    -->
+</head>
+<body>
+
+    <script type='text/javascript'>
+        var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+        $(document).ready(function () {
+
+            $('#header_button').click(function () {
+                $.jStorage.set("searchTerm", $('#header_search').val());
+                window.location = 'catalog_search.html';
+            });
+
+            $("#header_search").keyup(function (event) {
+                if (event.keyCode == 13)
+                    $('#header_button').click();
+            });
+
+            $('#sftwr').tablesorter({
+                // sort on the first column and second column, order asc
+                sortList: [[0, 0], [1, 0]]
+            });
+            $('#pubs').tablesorter({
+                sortList: [[0, 0], [1, 0]]
+            });
+            $('#data').tablesorter({
+                sortList: [[0, 0], [1, 0]]
+            });
+            $('#examples').tablesorter({
+                sortList: [[0, 0], [1, 0]]
+            });
+            $('#splash').tablesorter({
+                // sort on the first column, order asc
+                sortList: [[0, 0]]
+            });
+
+            //get the list of tabs and the number of tabs
+            var tabList = $('#tabs >ul >li');
+            var tabCount = $('#tabs >ul >li').size();
+
+            //create table tabs
+            $(function () {
+                $("#tabs").tabs
+                var param_tab = decodeURIComponent(getUrlParams("tab"));
+                var param_term = decodeURIComponent(getUrlParams("term"));
+
+                if (param_tab && !param_term) {
+                    //console.log("tab");
+                    if (param_tab == "tabs0")
+                        $("#tabs").tabs({ active: 0 });  //software tab
+                    else if (param_tab == "tabs1")
+                        $("#tabs").tabs({ active: 1 });  //publications tab
+                    else if (param_tab == "tabs2")
+                        $("#tabs").tabs({ active: 2 });  //data tab
+                    else if (param_tab == "tabs3")
+                        $("#tabs").tabs({ active: 3 });  //examples tab
+                }
+                else if (param_tab && param_term) {
+                    //console.log("tab and term");
+                    if (param_tab == "tabs0")
+                        swSearch(param_term);
+                    else if (param_tab == "tabs1")
+                        pubSearch(param_term);
+                    else if (param_tab == "tabs2")
+                        dataSearch(param_term);
+                    else if (param_tab == "tabs3")
+                        exSearch(param_term);
+                }
+                else {
+                    //console.log("no params");
+                    if ($("#tabs0"))
+                        $("#tabs").tabs({ active: 0 }); //software tab
+                    else if ($("#tabs1"))
+                        $("#tabs").tabs({ active: 1 }); //publications tab
+                    else if ($("#tabs2"))
+                        $("#tabs").tabs({ active: 2 }); //data tab
+                    else
+                        $("#tabs").tabs({ active: 3 }); //examples tab
+                }
+
+            });
+
+            //configure table search and clear button for software, publications, and data table
+            for (var i = 0; i < tabCount; i++) {
+
+                var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+                if (tabName == "software") {
+                    var tabTable = $('#tabs0 table'); //table within this tab
+                    var tabHeaders = getTableHeaders(tabTable);
+
+                    var sw_options = {
+                        valueNames: tabHeaders
+                    };
+
+                    swList = new List(tabName, sw_options);
+
+                    $("#clear0").click(function () {
+                        var currId = this.id.match(/\d+/g);
+                        $("#search" + currId[0]).val("");
+                        swList.search();
+                    });
+                }
+
+                if (tabName == "publications") {
+                    var tabTable = $('#tabs1 table'); //table within this tab
+                    var tabHeaders = getTableHeaders(tabTable);
+
+                    var pub_options = {
+                        valueNames: tabHeaders
+                    };
+
+                    pubList = new List(tabName, pub_options);
+
+                    $("#clear1").click(function () {
+                        var currId = this.id.match(/\d+/g);
+                        $("#search" + currId[0]).val("");
+                        pubList.search();
+                    });
+
+                }
+
+                if (tabName == "data") {
+                    var tabTable = $('#tabs2 table'); //table within this tab
+                    var tabHeaders = getTableHeaders(tabTable);
+
+                    var data_options = {
+                        valueNames: tabHeaders
+                    };
+
+                    dataList = new List(tabName, data_options);
+
+                    $("#clear2").click(function () {
+                        var currId = this.id.match(/\d+/g);
+                        $("#search" + currId[0]).val("");
+                        dataList.search();
+                    });
+
+                }
+
+                if (tabName == "examples") {
+                    var tabTable = $('#tabs3 table'); //table within this tab
+                    var tabHeaders = getTableHeaders(tabTable);
+
+                    var examples_options = {
+                        valueNames: tabHeaders
+                    };
+
+                    exList = new List(tabName, examples_options);
+
+                    $("#clear3").click(function () {
+                        var currId = this.id.match(/\d+/g);
+                        $("#search" + currId[0]).val("");
+                        exList.search();
+                    });
+
+                }
+
+                if (tabName == "search") {
+
+                    var table_clone = $('#tabs table').clone();
+                    for (var k = 0; k < table_clone.length; k++) {
+                        var searchHeaders = getTableHeaders(table_clone[k]);
+                        var search_options = {
+                            valueNames: searchHeaders
+                        };
+
+                        if (table_clone[k].id == "sftwr") {
+                            $("#softwareSearch #sftwrTable").append(table_clone[k]);
+                            //tables are hidden initially
+                            $("#softwareSearch #sftwrTable").hide();
+                            ssftList = new List("softwareSearch", search_options);
+                        }
+                        else if (table_clone[k].id == "pubs") {
+
+                            $("#publicationsSearch #pubTable").append(table_clone[k]);
+                            $("#publicationsSearch #pubTable").hide();
+                            spubList = new List("publicationsSearch", search_options);
+                        }
+                        else if (table_clone[k].id == "examples") {
+
+                            $("#examplesSearch #examplesTable").append(table_clone[k]);
+                            $("#examplesSearch #examplesTable").hide();
+                            sxampleList = new List("examplesSearch", search_options);
+                        }
+                        else {
+                            $("#dataSearch #dataTable").append(table_clone[k]);
+                            $("#dataSearch #dataTable").hide();
+                            sdtList = new List("dataSearch", search_options);
+                        }
+
+
+                    }
+
+                    $("#clear300").click(function () {
+                        var currId = this.id.match(/\d+/g);
+                        $("#search" + currId[0]).val("");
+                        if (ssftList != "")
+                            ssftList.search();
+                        if (spubList != "")
+                            spubList.search();
+                        if (sdtList != "")
+                            sdtList.search();
+                        if (sxampleList != "")
+                            sxampleList.search()
+                        //when search is cleared tables need to be hidden
+                        $("#softwareSearch #sftwrTable").hide();
+                        $("#publicationsSearch #pubTable").hide();
+                        $("#dataSearch #dataTable").hide();
+                        $("#examplesSearch #examplesTable").hide();
+
+                    });
+
+                }
+            }
+
+            var leaving_timeout;
+
+            //set the click action for the back button on the leaving window.
+            $('#back').click(function () {
+                cancelLeaving(); //cancel leaving, user clicks 'back'
+            });
+
+            //for any links with the 'external' class, set the click event
+            console.log($('a.external'));
+            $('a.external').click(function (ev) {
+                console.log("link clicked");
+                //prevent the default action of the event, this will stop the href in the anchor being followed
+                //before the animation has started, u can also use return false;
+                ev.preventDefault();
+                //stop any actions if a new link is clicked.
+                cancelLeaving();
+                //store a reference to the anchor tag
+                var $self = $(this);
+                showLeavingMessage($self);
+
+                leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+            });
+
+
+            function leave(leavingLink) {
+                //open an external link
+                window.open(leavingLink.attr('href'));
+                cancelLeaving(); //cancel leaving, user has left.
+            }
+
+            function showLeavingMessage(leavingLink) {
+                //show the leaving message
+                $('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+                //$("body").css("background-color", "grey");
+                $('#overlay').show();
+
+            }
+
+            function cancelLeaving() {
+                //cancel leaving.  hide the leaving box
+                clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+                $('#overlay').hide();
+            }
+
+
+
+        }
+        );
+
+        function jump(h) {
+            var url = location.href;
+            location.href = "#" + h;
+            history.replaceState(null, null, url)
+        }
+
+        function swSearch(link) {
+            var search_text = "";
+            if (link.hash)
+                search_text = link.hash.replace("#", "");
+            else
+                search_text = link;
+            $('#tabs').tabs({ active: 0 }); //publications tab
+            var search_box = $("#search0");
+            search_box.val(search_text);
+
+            setTimeout(function () {
+                $('html, body').animate({
+                    scrollTop: $("#tabs").offset().top
+                }, 0);
+                search_box.focus();
+                search_box.select();
+                swList.search(search_text);
+
+            }, 300);
+        }
+
+        function pubSearch(link) {
+            var search_text = "";
+            if (link.hash)
+                search_text = link.hash.replace("#", "");
+            else
+                search_text = link;
+            $('#tabs').tabs({ active: 1 }); //publications tab
+            var search_box = $("#search1");
+            search_box.val(search_text);
+
+            setTimeout(function () {
+                $('html, body').animate({
+                    scrollTop: $("#tabs").offset().top
+                }, 0);
+                search_box.focus();
+                search_box.select();
+                pubList.search(search_text);
+            }, 300);
+        }
+
+        function dataSearch(link) {
+            var search_text = "";
+            if (link.hash)
+                search_text = link.hash.replace("#", "");
+            else
+                search_text = link;
+            $('#tabs').tabs({ active: 2 }); //publications tab
+            var search_box = $("#search2");
+            search_box.val(search_text);
+
+            setTimeout(function () {
+                $('html, body').animate({
+                    scrollTop: $("#tabs").offset().top
+                }, 0);
+                search_box.focus();
+                search_box.select();
+                dataList.search(search_text);
+            }, 300);
+        }
+
+        function exSearch(link) {
+            var search_text = "";
+            if (link.hash)
+                search_text = link.hash.replace("#", "");
+            else
+                search_text = link;
+            $('#tabs').tabs({ active: 3 }); //examples tab
+            var search_box = $("#search3");
+            search_box.val(search_text);
+
+            setTimeout(function () {
+                $('html, body').animate({
+                    scrollTop: $("#tabs").offset().top
+                }, 0);
+                search_box.focus();
+                search_box.select();
+                dataList.search(search_text);
+            }, 300);
+        }
+
+        function allSearch(this_search) {
+            if (this_search.value != "" && this_search.value.length >= 3) {
+                var value = this_search.value;
+                //TODO: Implement Stop Words
+                ssftList.search(value);
+
+                //hide table if there are no rows that match the search term
+                if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+                    $("#softwareSearch #sftwrTable").show();
+                else
+                    $("#softwareSearch #sftwrTable").hide();
+
+                if (spubList != "") {
+                    var value = this_search.value;
+                    spubList.search(value);
+
+                    if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+                        $("#publicationsSearch #pubTable").show();
+                    else
+                        $("#publicationsSearch #pubTable").hide();
+                }
+
+                if (sdtList != "") {
+                    var value = this_search.value;
+                    sdtList.search(value);
+
+                    if ($("#dataSearch #dataTable tbody").children().length != 0)
+                        $("#dataSearch #dataTable").show();
+                    else
+                        $("#dataSearch #dataTable").hide();
+                }
+
+                if (sxampleList != "") {
+                    var value = this_search.value;
+                    sdtList.search(value);
+
+                    if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+                        $("#examplesSearch #examplesTable").show();
+                    else
+                        $("#examplesSearch #examplesTable").hide();
+                }
+
+            }
+            else {
+                //if search_term is empty or not 3 chars in length, make sure the tables are hidden
+                $("#publicationsSearch #pubTable").hide();
+                $("#softwareSearch #sftwrTable").hide();
+                $("#dataSearch #dataTable").hide();
+            }
+        }
+
+        function getTableHeaders(table) {
+            var this_table;
+
+            if (table[0])
+                this_table = table[0];
+            else
+                this_table = table;
+
+            var headerRow = this_table.tHead.rows[0].cells; //header row of table
+            var tableHeaders = [];
+
+            for (var j = 0; j < headerRow.length; j++)
+                tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+            return tableHeaders;
+        }
+
+        function licenseInfo(short_nm, long_nm, link, description, event) {
+
+            var x = event.clientX;
+            var y = event.clientY;
+
+            $("#dialog").removeClass("ribbon-dialog");
+            $(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+            $(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+            if (short_nm != "") {
+                $("#dialog").empty().dialog({
+                    position: [x, y - 20],
+                    title: short_nm
+                });
+
+                if (description != "")
+                    $("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+                else
+                    $("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+                $(".ui-dialog").mouseleave(function () {
+                    $("#dialog").dialog("close");
+                });
+            }
+        }
+
+        function dateInfo(ribbon, event) {
+            if (ribbon != "") {
+                var date_id = document.getElementById(ribbon).firstChild.id;
+                var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+                var date = date_id.replace(str_pattern, "$2-$3-$1"); //full date string
+
+                var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+                var x = event.clientX;
+                var y = event.clientY;
+                var text = "";
+                var background = "";
+
+                if (ribbon_type == "NEW") {
+                    text = "CREATED";
+                    $(".ui-dialog").removeClass('vertical-green');
+                    background = "vertical-red";
+                }
+                else {
+                    text = ribbon_type;
+                    $(".ui-dialog").removeClass('vertical-red');
+                    background = "vertical-green";
+                }
+
+                $("#dialog").empty().dialog({
+                    position: [x, y - 20],
+                    title: text + ": " + date,
+                });
+
+                $("#dialog").addClass("ribbon-dialog");
+                $(".ui-dialog").addClass(background + " ribbon-dialog");
+                $(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+                $(".ui-dialog").mouseleave(function () {
+                    $("#dialog").dialog("close");
+                });
+            }
+        }
+
+    </script>
+    <header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+    <div width='98%'>
+        <p>Добро пожаловать в Открытый каталог DARPA, который содержит курируемый список спонсируемого DARPA программного обеспечения и рецензированные публикации. 
+            DARPA спонсирует фундаментальные и прикладные исследования в различных отраслях которые могут привести к экспериментальным резльтатам
+            и повторно используемой технологии предназначенной приносить пользу нескольким государственным областям.</p>
+        <p>Открытый каталог DARPA организовывает публично выпущенные материалы из программ DARPA. DARPA придерживается открытой стратегии
+            чтобы помочь увеличить влияние государственных инвестиций.
+        </p>
+        <p>DARPA заинтересована в построении сообществ вокруг спонсируемых государством исследований.
+            DARPA планирует продолжать делать доступной информации создаваемуюе программами DARPA, включая программное обеспечение, статьи, данные, иэкспериментальные результаты.
+        </p>
+    </div><div id=''>
+        <p>Таблица на данной страницеперечисляет программы в текущий момент участвующие в каталоге.</p>
+        <p>
+            Менеджер программы:<br>
+            Mr. Wade Shen<br>
+            <a href='mailto:wade.shen@darpa.mil'>wade.shen@darpa.mil</a>
+        </p>
+        <p>Сообщить о проблеме: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p>
+        <p>Последнее обновление: Jun 16, 2017</p>
+    </div>
+    <div style='width:100%; float:left;'><h2>Текущий каталог программ:</h2></div>
+    <table id='splash' class='tablesorter'>
+        <thead>
+            <tr>
+                <th>Программа DARPA</th>
+                <th>Офис</th>
+                <th>Описание</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td width=230> <a href='AA.html'>AA</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Активной Аутентификации (Active Authentication (AA) ищет способы разработать неизведанные способы 
+                    проверки идентичности компьютерных пользователей, фокусируясь на уникальных аспектах
+                    индивидуумов через основанную на программном обеспечении биометрику. Биометрика определяется как
+                    характеристики используемые для опознавания индивиуумов на основании одного или более свойственных
+                    физических или поведенческих черт. Эта программа сфокусирована на поведенческой биометрике.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='ADAMS.html'>ADAMS</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Нахождение Аномалий в Разлиных Масштабах (The Anomaly Detection at Multiple Scales (ADAMS) ищет способ создать, адаптировать или 
+                    применить технологию для описания аномалий и их определения в массивных наборах данных. Аномалии в данных подсказывают
+                    сбор дополнительной, действенной информации в широком разнообразии контекстов реального мира..
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='APAC.html'>APAC</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Автоматического Анализа для Кибербезопасности (The Automated Program Analysis for Cybersecurity (APAC) 
+                    нацелена на решение проблем своевременной и надежной проверки безопасности мобильных приложений
+                    путем определения сперва свойств безопасности которые будут измеряться и затем разрабатывая автоматические инструменты
+                    для выполенения измерений. APAC заимствует во многом из области метода формального анализа программ (оказательство теорем, логика и машинное доказательсво) 
+                    чтобы держать злонамеренный код из рынка Android приложений Департамента Обороны (DoD). APAC ищет способы применить последние 
+                    научные прорывы в данной отрасли как попытка масштабировать возможности анализа программ DoD до уровня никогда ранее не достижимого 
+                    с автоматическими решениями.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='BET.html'>BET</a></td>
+                <td width=70>I2O</td>
+                <td>Цель программы Преобразований Бинарных Исполняемых Файлов (Binary Executable Transforms (BET) произвести революционные технологии
+                    для анализа исполняемых двоичных файлов для нахождения и извлечения исполняемых компонентов.
+                    Исполняемые компоненты определяются как как полностью инкапсулированный набор процедур, сруктур данных, объектов и глобальных переменных
+                    которые выполняют определенную функцию, совместно с метаданными документирующими аргументы компонента 
+                    и любые используемые системные библиотеки. Точнее, исполнители BET совершают инновационные исследования в: 
+                        &bull; Автоматическом аналие исполняемых файлов и обнаружению функциональных компонентов.
+                        &bull; Автоматическом разделении и извлечении идентифицированного функционала в повторно используемые компоненты с четко определенными входами и выходами.
+                        &bull; Совмещение статического и динамического анализа двоичных файлов для улучшения понимания двоичных исполняемых файлов.
+                        &bull; Исследование методов формальной проверки для доказательства свойств функциональных компонентов.
+                        &bull; Разработка промежуточного языка предстваления для поддержки разбиения программ.
+                        &bull; Разработка технологий деляющей возможными исследование и изучения для программы BET.</td>
+            </tr>
+            <tr>
+                <td width=230> <div class='wrapper'><a href='BigMech.html'>Большие механизмы (Big Mechanism)</a></div></td>
+                <td width=70>I2O</td>
+                <td>
+                    Большие механизмы это большие, объясняющие модели сложных систем в которых взаимодействия имеют важный причинные эффекты.
+                    Сбор больших данных все чаще автоматизируется, но создание больших механизмо по прежнему остается усилиямим людей 
+                    становясь все сложнее из-за фрагментации и распределения знаний. 
+                    Цель программы Большие Механизмы это для машин помогать людям моделировать и анализировать очень сложные системы
+                    путем чтения фрагментированной литературы и формируя рассуждения с помощью моделей.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='Biochronicity.html'>Биохроничность (Biochronicity)</a></td>
+                <td width=70>BTO</td>
+                <td>
+                    Время важно для многих биологических процессов, включая циркадно-регулирующие выражение генов включая относящиеся
+                    к метаболическим, клеточным циклам и функциям имунной системы. Всеобъемлющими целями БоиХроничности является интеграция
+                    математики, физики, и биологии для:
+                    (1) понимания зависимости от времени во время выражения генов,
+                    (2) формирования предиктивных моделей сложных биологических систем, и
+                    (3) регулирования молекуряных часов для модулирования медицинских результатов.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='BOLT.html'>BOLT</a></td>
+                <td width=70>I2O</td>
+                <td>Программа Широкого Операционного Перевода Языков (Broad Operational Language Translation (BOLT) нацелена на 
+                    предоставление возможностей общения с не говорящими английским языком населения и определения важной информации в источниках на иностранных языках путем:
+                    1) позволения англоговорящим понимать иностранные источники всех жанров, включая чат, переписку и информальные сообщения;
+                    2) предоставляя англоговорящим возможность быстро идентифицировать нужную информацию в источниках на иностранном языке используя запросы на обычном языке; и
+                    3) позволяя несколько этапное общение в тексте и разговоре с не англоговорящими.
+                    В случае успеха, BOLT создаст все возможности без ограничений предметной области или жанра.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='CFT.html'>CFT</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Быстрый Кибер Цикл (Cyber Fast Track (CFT) ищет революционные продвижения в кибер науке, устройствах и системах через
+                    бюджетные, быстро оборачиваемые проекты. 
+                    Для достижения этого, CFT вовлекает базу новых исполнителей многие из которых ни меют опыта работы с государством. 
+                    Начиная с августа 2011 до апреля 2013 программа привлекла 550 предоставленных предложенний, из которых 90 процентов были от исполнителей
+                    которые никогда перед этим не работали с государством, и выиграли 135 контрактов.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='CRASH.html'>CRASH</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Дизайна с чистого листа Отказоустойчивых, Адаптивныз, Безопасных Систем (CRASH) сфокусирована на дизайне
+                    новой компьютерной системы которая высокоустойчива к кибераткакам, может адаптироваться после успешной атаки
+                    для продолжения предоставления полезных услуг, изучая предыдущие атаки как защищаться от них и справляться с будущими атаками, и может 
+                    починить себя после успешных атак. Эта программа включает компьютерную архитектуры от процессоров и наборов инструкций, включая опрерационные системы
+                    и языки программирования, и расширяется до уровня прикладных инструментов.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='CSFV.html'>CSFV</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Формальная Верификация Толпой (Crowd Sourced Formal Verification (CSFV) это программа DARPA которая нацелена на исследование
+                    могут ли большое количество не экспертов совершить формальную верификацию быстрее и более эффективно чем стандартные процессы.
+                    Цель это преобразование верификации в более доступную задачу создав веселые, интуитивные игры которые отражают проблемы формальной 
+                    верификации. Играя в игру будет эффективно помочь инструментам программной верификации завершить соответствующе докузательства 
+                    формальной верификации.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='CyberGenome.html'>Кибер Защита (КиберГеном)</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Кибер Защиты разрабатывает ключевые вычислительные и сетевые технологии требуемые для защиты информации Департамента Обороны,
+                    информационной инфраструктуры, и критической информационной инфраструктуры. Это включает новые техники кибер-расследования
+                    для автоматизации обнаружения, идентификации и характеризации вариантов злонамеренного кода и таким образом ускоряя разработку
+                    эффективных ответов.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='DCAPS.html'>DCAPS</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Обнаружение и Вычислительный Анализ Психологических Сигналов (The Detection and Computational Analysis of Psychological Signals (DCAPS) нацелена на 
+                    разработку новых аналитических инструментов для оценки психологического статуса бойцов в надежде улучшения осведомленности о психологическом 
+                    здоровье и позволяя им вовремя искать помощи. Инструменты DCAPS будут разработаны для анализа шаблонов в каждодневном поведении
+                    для нахождения тонких изменений связанных с пост-травматическим стрессовым расстройством, депрессии и суициные идеации.
+                    Конкретнее, DCAPS надеется продвинуть достижения в извлечении и анализце 'честных сигналов' из широкого разнообразия сенсорных данных
+                    присущих ежедневным социальным взаимодействиям. DCAPS не нацелена на продоставления конкретного диагноза, но продоставляя
+                    общие метрики психологического здоровья.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='DEFT.html'>DEFT</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Технология автоматизированной, глубокой обработка естественного языка (NLP) может содержать решение для более эффективной
+                    обработки текстовой информации и позволяя понимать связи в тексте которые могут быть не явно очевидны людям. 
+                    DARPA создает программу Глубогого Изучения и Фильтрации Текста (Deep Exploration and Filtering of Text (DEFT) чтобы запрячь мощь NLP.
+                    Сложный искуственный интеллект данного рода имеет потенциал позволить оборонным аналитикам эффективно изучать на порядок Большие
+                    документов, которые могут позволить обнаружить неявно выраженную, действенную информации среди этих документов.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='ENGAGE.html'>ENGAGE</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    DARPA создала программу ENGAGE чтобы позволить разработку систем образования и тренировки которые лучше, быстрее, постоянно оптимизируются, и широко масштабируются.
+                    ENGAGE изучает программно-интенсивное и насыщенное данным образование и методы тренировки которые запрягут мощь большой популяции пользователейдля оптимизации инструкций.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='FLASHLIGHT.html'>FLASHLIGHT</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа FLASHLIGHT ищет способы предотвратить извлечение данных и информационные утечки через использование
+                    возможностей усиленного аудита и инспекции которые свидетельствуют о целостности и законности данных покидающих сетевой анклав.
+                </td>
+            </tr>
+            <tr>
+                <td width=230><a href='GRAPHS.html'>GRAPHS</a></td>
+                <td width=70>DSO</td>
+                <td>
+                    GRAPHS разрабатывает масштабируемые алгоритмы и статистические методы для анализа и моделирования
+                    очень больших и динамически эволюционирующих сетей, с целью разработки прогнозирующих методов для аномальных
+                    и исключительных событий в сетях. Основной фокус программ количественный и структурные аспекты больших сетей и моделей присутсвия.
+                    Программа разделена на несколько выпадов, с исполнителями работающими с технологиями сбора проб для графов, геометрически вложений(geometric embeddings)
+                    в гиперболических пространствах, Гауссовы Условные Случайные Поля(Gaussian Conditional Random Fields), среднеуровневое сетевое поведение, 
+                    и прогнозирование связей.
+                </td>
+            </tr>
+            <tr>
+                <td width=230><a href='HACMS.html'>HACMS</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Цель программы Высоконадежных Военных Киберсистем (High-Assurance Cyber Military Systems (HACMS) это создание технологии для построения высоконадежных
+                    кибер-физических систем, где высокая надежность определена как функционально корретное и удовлетворяющая соответствующие свойства сохранности и безопасности.
+                    Ключевые технологии включают интерактивные системы синтезирования программного обеспечения, инструменты верификации, и язык написания спецификаций.</td>
+            </tr>
+            <tr>
+                <td width=230><a href='ICAS.html'>ICAS</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Системы разработанные в Интегрированной Системе Кибер Анализа (Integrated Cyber Analysis System (ICAS) сделают судебную информацию
+                    о серверах и сети доступной для производственной ИТ безопасности.
+                    ICAS автоматически интегрирует структурированные и не структурированные источники сетевых данных в федерированную базу данных чтобы предоставить возможность
+                    рассуждать о киберугрозах, и предоставлять киберзащитникам текущую картину их ИТ окружения, для уменьшения времени требуемого для 
+                    обнаружения целевых атак. В сердце этой возможности является онтология кибербезопасности которая позволяет автоматическую федерацию
+                    нескольких гетерогенных источников данных путем предоставляения единнобразных семантических отношений для защиты ИТ сети.
+                    Эта онтология доступна для скачивания по адресу http://invincealabs.github.io/icas-ontology/.
+                </td>
+            </tr>
+            <tr>
+                <td width=230><div class='wrapper'><a href='LADS.html'>LADS</a><div class='ribbon-wrapper'><div class='ribbon-standard ribbon-green'>UPDATED</div></div></div></td>
+                <td width=70>I2O</td>
+                <td>
+                    Цель программы Использование Аналоговой Области для Безопасности (Leveraging the Analog Domain for Security (LADS) предназначена для разработки
+                    новых возможностей кибербезопасности путем исследования пересечения аналоговой и цифровой области.
+                    Общее видении таково что комбинация анализа аналоговых сигналов (например, как используется в атаках побочных каналов)
+                    и техники анализа программ позволят высоко-точную, очень аккуратную интроспекцию Встроенных и Специализированных для Миссии Устройств (Embedded and Mission-Specific Devices (EMSDs)
+                    с помощью внешнего устройства мониторинга, и что такая интроспекция позволит детектировать различных противников.
+                    Несмотря на то что основной фокус на ВСМУ (EMSDs), программа также заинтересована в приложении данных техник в традиционных
+                    ИТ устройствах.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='MADCAT.html'>MADCAT</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Цель программы Мультиязычной Автоматической Классификации Анализа и Перевода Документов (Multilingual Automatic Document Classification Analysis and Translation (MADCAT)
+                    это автоматически переводить текстовые изображения в английскую транскрипцию, таким образом устраняя потребность в лингвистах и аналитиках
+                    одновременно автоматически предоставляя релевантную, сжатую действенную информацию для военного командования и персонала своевременно.</td>
+            </tr>
+            <tr>
+                <td width=230><div class='wrapper'><a href='MEMEX.html'>MEMEX</a></div></td>
+                <td width=70>I2O</td>
+                <td>
+                    Современный веб поиск использует централизованное, универсальный подход который ищет Интернет с одним набором инструментов для всех запросов. Несмотря на то что данная модель
+                    была крайне успешна коммерчески, она не работает хорошо для многих государственных сценариев. Чтобы помочь преодолеть эти сложности, DARPA 
+                    запустила программу Memex в сентябре 2014. Memex ищет способы разработки программного обеспечения которые продвинут онлайн возможности онлайн поиска
+                    намного дальше текущего уровня развития. Целью является изобретение лучших методов для взаимодействия и обмена информацией, чтобы пользователи могли
+                    быстро и тщательно искать в подмножествах информации релевантных для их индивидуальных интересов. Создание новых отраслевых 
+                    парадигм индексирования и поиска предоставить механизмы для улучшения нахождения контента, извлечения информации, получения информации, взаимдействия пользователей,
+                    и расшения текущих возможностей поиска на глубокий веб, темный веб, и нетрадиционный (например мультимедиа) контент.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='MRC.html'>MRC</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Отказоустойчивые Облака Целевого Назначения (The Mission-oriented Resilient Clouds (MRC) направлена некоторые  
+                    сложности безопасности которые встречают облачные вычисления путем разаботки технологий для детектирования, диагностики и реагирования на атаки в облаке,
+                    с целью эффективного построения 'общественной системы здравоохранения' для облака. ООЦН (MRC) также разрабатывает технологии предназначеные
+                    позволить миссии которые будут поддерживаться облачными вычислениями и другими сетевыми системами для продолжения функционирования
+                    во время кибератак.</td>
+            </tr>
+            <tr>
+                <td width=230><a href='MUSE.html'>MUSE</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    По мере того как вычислительные устройства становятся более всепроникающими, программные системы которые контролируют их
+                    становятся все более сложными и комплексными. Вследствие, несмотря на огромные ресурсы посвященные созданию программного обеспечения более
+                    надежным и отказоустойчивым, гаранирования что программы корректны в особенности при больших масштабах - остается
+                    сложным и непростыми стараниям. К сожалению, неперехваченные ошибки вызванные во время программы могут привести к потенциально
+                    деформирующим нарушениям безопасности, неожиданным сбоям в работе или неожиданному поведению, все из этого может иметь глубокие негативные
+                    последствия для экономической продуктивности, надежности критических систем, и корректному оперированию важных и деликатной 
+                    кибер инфраструктуре.
+                    <br/><br />Чтобы помочь преодолеть эти трудности, DARPA создала программу Добычи и Понимания Анклавов Программного Обеспечения (Mining and Understanding Software Enclaves (MUSE).
+                    ДПАПО (MUSE) ищет способы сделать значительные прорывы в способе того как программного обеспечение собирается, отлаживается, проверяется, обслуживается 
+                    и понимается. Центральным в этом подходе является создание общественной инфраструктуры построенно вокруг большого, разнообразного и эволюционирующего
+                    корпуса программного кода построенного из сотен биллионов линий кода с открытым доступом доступного сейгодня.
+                </td>
+            </tr>
+
+            <tr>
+                <td width=230><a href='PLANX.html'>PLAN X</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Plan X это основание для программы кибернетического военного дела чтобы разрабатыать платформы для Департамента Обороны для планирования, ведения и оценки кибороружия
+                    в способ схожий с кинетическим военным делом. 
+                    На пути к этой цели программа будет связывать заинтересованные кибер сообщества из академии, оборонной промышленной базы, 
+                    коммерческой тех-индустрии, и специалистов по эргономике пользовательского интерфейса (user-experience experts).
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='PPAML.html'>PPAML</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Машинное обучение - способность компьютеров понимать данные, управлять результатами, и выводить понимание из неопределенной информации - 
+                    это сила за многими современными революциями в вычислениях. Фильтры для email спама, персональные ассистены мобильных телефонов и 
+                    само-управляемые транспортные средства все основаны на достижениях науки в машинном обучении. 
+                    К сожалению, несмотря на то что спрос на данные возможности увеличиваются, каждое новое приложение требует Геркулесовых усилий.
+                    Команды тяжело находимых экспертов дожлны создавать дорогостоящие, специализированные инструменты
+                    которые обычно болезненно медленные и могут вести себя непредсказуемо против больших, сложных наборов данных.
+                    </BR></BR>
+                    Прогамма Вероятностного Программирования для Продвижения Машинного Обучения (Probabilistic Programming for Advancing Machine Learning (PPAML)
+                    нацелена на решение данных трудностей. Вероятностное программирование это новая парадигма программирования для управления неопределенной информацией.
+                    Используя вероятностные языки программирования, PPAML ищет способы значительно увеличить количество людей которые могут успешно 
+                    строить приложения машинного обучения и сделать экспертов машинного обучения намного более эффективными. 
+                    Более того, программа ищет способы создать более экономичные, надежные и мощные приложения которым нужно меньше данных для создания более 
+                    точных результатов - функции недотижимые с текущими технологиями.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='PROCEED.html'>PROCEED</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа DARPA Программируемые Вычисления для Зашифрованных Данных (DARPA's Programming Computation on Encrypted Data (PROCEED) 
+                    это исследовательские усилия которые ищут способ разработать методы которые позволят вычисления над зашифрованными данными
+                    без расшифровывания сперва этих данных, делая возможным вычислять более безопасно в недоверяемых окружениях.</td>
+            </tr>
+
+            <tr>
+                <td width=230><a href='RAM.html'>RAM</a></td>
+                <td width=70>BTO</td>
+                <td>
+                    Программа Восстановления Активной Памяти (Restoring Active Memory (RAM) нацелена на разработку нейротехнологий
+                    для способствования формированию и возврату воспоминаний в людях живухих с нарушениями памяти из-за травматических повреждений мозга.
+                    Для достижения данной цели, исследователи ВАП (RAM) разрабатывают имплантированные устройства нейронного интерфейса
+                    которые активно записывают активность из человеческого мозга, используют набор алгоритмов для декодирования и кодирования
+                    нейронных сигнатур декларативной памяти, и передают целевые терапевтические стимуляции назад в мозг
+                    для вызвания состояния нейронной активности способствующей формированию или восстановлению воспоминаний.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='RATS.html'>RATS</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Надежного Автоматической Транскрипции Речи (Robust Automatic Transcription of Speech (RATS) будет создавать алгоритмы
+                    и программное обеспечение для выполнения следующие задач на потенциально-содержащих речь сигналах полученных через коммуникационные каналы
+                    которые крайне зашумлены и/или сильно искажены: обнаружение речевой активности, идентификация языка, идентификация разговаривающего,
+                    и выявление ключевых слов.</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='RP.html'>Революционизирование Протезирования (Revolutionizing Prosthetics)</a></td>
+                <td width=70>BTO</td>
+                <td>
+                    DARPA запустила программу Революционизирования Протезирования (Revolutionizing Prosthetics) с радикальной целью:
+                    Создать продвинутые электромеханические протезы верхней конечности с практически естественным контролем которые 
+                    повышают независимость и улучшают качество жизни для ампутантов, и получить одобрение Управление по контролю за продуктами и лекарствами США (U.S. Food and Drug Administration (FDA))
+                    для их использования. В мае 2014, менее чем через 8 лет после усилия были запущены, эта мечта является реальностью;
+                    FDA одобрил Система Руки DEKA (DEKA Arm System).</td>
+            </tr>
+            <tr>
+                <td width=230> <a href='SAFER.html'>SAFER</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа SAFER ищет способы разработки технологии которые позволяют безопасные, отказоустойчивые коммуникации
+                    через Интернет, особенно в ситуациях в которых третьи стороны пытаются обнаружить линость или нахождение
+                    конечных пользователей, или заблокировать коммуникации. Программа также ищет способы предоставить
+                    технологическое качество услуг требуемое для поддержки прилоежений, таких как 
+                    электронная почта, мгновенные сообщение, передача голоса по IP, и другие носители которые содействую эффективных коммуникациям.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='SMISC.html'>SMISC</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    Главная цель программы Социальные Медиа в Стратегических Коммуникациях (Social Media in Strategic Communication (SMISC) 
+                    для разработки новой науки социальных сетей построенные на появляющейся технологической базы. 
+                    Через программу, DARPA ищет способы разработать инструменты для поддержки усилий человеческих операторов
+                    для противодействия дезинформации или ложной информации с правдивой информацией.
+                </td>
+            </tr>
+<!--
+            <TR>
+                <TD width=230> <div class='wrapper'><a href='STAC.html'>STAC</a><div class='ribbon-wrapper'><div class='ribbon-standard ribbon-green'>NEW</div></div></div></TD>
+                <TD width=70>&nbsp;</TD>
+                <TD>
+                    As new defensive technologies make old classes of vulnerability difficult to exploit successfully, 
+                    adversaries move to new classes of vulnerability. Vulnerabilities based on flawed implementations 
+                    of algorithms have been popular targets for many years. However, once new defensive technologies 
+                    make vulnerabilities based on flawed implementations less common and more difficult to exploit, adversaries 
+                    will turn their attention to vulnerabilities inherent in the algorithms themselves.
+                </TD>
+            </TR>
+-->
+            <tr>
+                <td width=230> <div class='wrapper'><a href='TC.html'>TC</a></div></td>
+                <td width=70>I2O</td>
+                <td>
+                    Программа Прозрачных Вычислений (Transparent Computing) нацелена чтобы сделать текущие непрозрачные вычислительные системы
+                    прозрачными, предоставляя высоко-точную видимость во взаимодействие компонентов во время оперирования системы
+                    сквозь все слои программных абстракций, одновременно накладывая минимальный накладные расходы по производительности.
+                    Программа будет разрабатывать технологии для записи и сохранения происхождения всех системных элементов/компонентов (входы, програмные модули, процессы, и т.д.); 
+                    динамически отслеживая взаимодействия и рядовые зависимости между системными кибер компонентами; сборка этих зависимостей 
+                    в сквозное поведение системы; и рассуждение об этих поведениях, как судебно так и в реальном времени.
+                    Путем автоматического или полуавтоматического "связывания воедино" между несколькими видами деятельности которые
+                    индивидуально законны но в совокупности обозначают злой умысел, ПВ (TC) будет позволять своевременное обнаружение Продвинутые Постоянные Угрозы ППУ (APT) 
+                    и завершая анализ причин и оценка урона как только деятельность противника идентифицирована. В дополнении,
+                    программа ВП (TC) будет интегрировать свои базовые функции кибер рассуждения в кибер промышленную конструкцию мониторинга и управления
+                    которая применяет политики безопасности в ключевых входящих/выходящих точках, например, файерволл.
+                </td>
+            </tr>
+            <tr>
+                <td width=230> <a href='XDATA.html'>XDATA</a></td>
+                <td width=70>I2O</td>
+                <td>
+                    XDATA разрабатывает библиотеку открытого программного обеспечения для больших данных
+                    чтобы помочь преодолеть сложности эффективного масштабирования к современным объемам и характеристикам данных.
+                    Программа разрабатывает инструменты и техники для обработки и анализа больших наборов 
+                    несовершенных, неполных данных. Эта программа и публикации сфоксированы на области аналитики, визуализации и 
+                    инфраструктуры для эффективного слияния, анализа и распространения этих больших объемов данных.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <br>
+    <div id="overlay"><div class="leavingbox">
+        <p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div>
+    <footer>
+        <div class='footer-style'>
+            <hr>
+            <p>
+                <a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+                <a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a>
+            </p>
+        </div>
+    </footer>
+    </div>
+</body>
+</html>

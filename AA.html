@@ -1,25 +1,25 @@
-﻿
-  <!DOCTYPE html>
-  <html lang='en'>
-  <head>
-  <meta charset="utf-8">
-  <title>DARPA - Open Catalog</title>
+﻿<!DOCTYPE html>
+<html lang='en'>
 
-  <link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
-  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
-  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
-  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
-  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
-  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
-  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
-  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
-  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
-  <script language="javascript" type='text/javascript' src="utils.js"></script>
-  <script language="javascript" type='text/javascript' src="spin.js"></script>
-  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
-  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+<head>
+	<meta charset="utf-8">
+	<title>DARPA - Open Catalog</title>
 
- <!--
+	<link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
+	<link rel='stylesheet' href='css/style_v2.css' type='text/css' />
+	<link rel='stylesheet' href='css/banner_style.css' type='text/css' />
+	<link rel='stylesheet' href='css/header_footer.css' type='text/css' />
+	<link rel='stylesheet' href='css/list_style.css' type='text/css' />
+	<link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css' />
+	<script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+	<script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+	<script language="javascript" type='text/javascript' src="jstorage.js"></script>
+	<script language="javascript" type='text/javascript' src="utils.js"></script>
+	<script language="javascript" type='text/javascript' src="spin.js"></script>
+	<script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+	<script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+	<!--
   <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
   <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
   <script language="javascript" type='text/javascript' src="tooltip.js"></script>
@@ -28,262 +28,262 @@
   <script language="javascript" type='text/javascript' src="axis.js"></script>
   <script language="javascript" type='text/javascript' src="distribution.js"></script>
  -->
-  </head>
-  <body>
+</head>
+
+<body>
 
 
-<script type='text/javascript'>
-var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+	<script type='text/javascript'>
+		var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
 
-$(document).ready(function()
-    {
+		$(document).ready(function () {
 
-    $('#header_button').click(function () {
+			$('#header_button').click(function () {
 
-        var param_term = $('#header_search').val()
+				var param_term = $('#header_search').val()
 
-        if (param_term.length > 30) {
-            param_term = param_term.substring(0, 30);
-        }
+				if (param_term.length > 30) {
+					param_term = param_term.substring(0, 30);
+				}
 
-        param_term = param_term.replace(/[^a-zA-Z 0-9]+/g, '');
+				param_term = param_term.replace(/[^a-zA-Z 0-9]+/g, '');
 
 
-        $.jStorage.set("searchTerm", param_term);
-			window.location = 'catalog_search.html';
-	   });
+				$.jStorage.set("searchTerm", param_term);
+				window.location = 'catalog_search.html';
+			});
 
-		$("#header_search").keyup(function(event){
-			if(event.keyCode == 13)
-				$('#header_button').click();
-		});
+			$("#header_search").keyup(function (event) {
+				if (event.keyCode == 13)
+					$('#header_button').click();
+			});
 
-	   $('#sftwr').tablesorter({
-		// sort on the first column and second column, order asc
-        	sortList: [[0,0],[1,0]]
-    	});
-        $('#pubs').tablesorter({
-        	sortList: [[0,0],[1,0]]
-    	});
-        $('#data').tablesorter({
-        	sortList: [[0,0],[1,0]]
-    	});
-	$('#examples').tablesorter({
-        	sortList: [[0,0],[1,0]]
-    	});
-        $('#splash').tablesorter({
-		// sort on the first column, order asc
-        	sortList: [[0,0]]
-    	});
+			$('#sftwr').tablesorter({
+				// sort on the first column and second column, order asc
+				sortList: [[0, 0], [1, 0]]
+			});
+			$('#pubs').tablesorter({
+				sortList: [[0, 0], [1, 0]]
+			});
+			$('#data').tablesorter({
+				sortList: [[0, 0], [1, 0]]
+			});
+			$('#examples').tablesorter({
+				sortList: [[0, 0], [1, 0]]
+			});
+			$('#splash').tablesorter({
+				// sort on the first column, order asc
+				sortList: [[0, 0]]
+			});
 
-		//get the list of tabs and the number of tabs
-		var tabList = $('#tabs >ul >li');
-		var tabCount = $('#tabs >ul >li').size();
+			//get the list of tabs and the number of tabs
+			var tabList = $('#tabs >ul >li');
+			var tabCount = $('#tabs >ul >li').size();
 
-		//create table tabs
-		$(function() {
-			$( "#tabs" ).tabs
-			var param_tab = decodeURIComponent(getUrlParams("tab"));
-			var param_term = decodeURIComponent(getUrlParams("term"));
+			//create table tabs
+			$(function () {
+				$("#tabs").tabs
+				var param_tab = decodeURIComponent(getUrlParams("tab"));
+				var param_term = decodeURIComponent(getUrlParams("term"));
 
-			if(param_tab && !param_term){
-				//console.log("tab");
-				if (param_tab == "tabs0")
-					$("#tabs").tabs({active: 0});  //software tab
-				else if (param_tab == "tabs1")
-					$("#tabs").tabs({active: 1});  //publications tab
-				else if (param_tab == "tabs2")
-					$("#tabs").tabs({active: 2});  //data tab
-				else if (param_tab == "tabs3")
-					$("#tabs").tabs({active: 3});  //examples tab
-			}
-			else if(param_tab && param_term){
-				//console.log("tab and term");
-				if (param_tab == "tabs0")
-					swSearch(param_term);
-				else if (param_tab == "tabs1")
-					pubSearch(param_term);
-				else if (param_tab == "tabs2")
-					dataSearch(param_term);
-				else if (param_tab == "tabs3")
-					exSearch(param_term);
-			}
-			else{
-				//console.log("no params");
-				if($("#tabs0"))
-					$("#tabs").tabs({active: 0}); //software tab
-				else if($("#tabs1"))
-					$("#tabs").tabs({active: 1}); //publications tab
-				else if($("#tabs2"))
-                    $("#tabs").tabs({active: 2}); //data tab
-                else
-					$("#tabs").tabs({active: 3}); //examples tab
-			}
+				if (param_tab && !param_term) {
+					//console.log("tab");
+					if (param_tab == "tabs0")
+						$("#tabs").tabs({ active: 0 });  //software tab
+					else if (param_tab == "tabs1")
+						$("#tabs").tabs({ active: 1 });  //publications tab
+					else if (param_tab == "tabs2")
+						$("#tabs").tabs({ active: 2 });  //data tab
+					else if (param_tab == "tabs3")
+						$("#tabs").tabs({ active: 3 });  //examples tab
+				}
+				else if (param_tab && param_term) {
+					//console.log("tab and term");
+					if (param_tab == "tabs0")
+						swSearch(param_term);
+					else if (param_tab == "tabs1")
+						pubSearch(param_term);
+					else if (param_tab == "tabs2")
+						dataSearch(param_term);
+					else if (param_tab == "tabs3")
+						exSearch(param_term);
+				}
+				else {
+					//console.log("no params");
+					if ($("#tabs0"))
+						$("#tabs").tabs({ active: 0 }); //software tab
+					else if ($("#tabs1"))
+						$("#tabs").tabs({ active: 1 }); //publications tab
+					else if ($("#tabs2"))
+						$("#tabs").tabs({ active: 2 }); //data tab
+					else
+						$("#tabs").tabs({ active: 3 }); //examples tab
+				}
 
-		});
+			});
 
-		//configure table search and clear button for software, publications, and data table
-		for (var i=0; i<tabCount; i++){
+			//configure table search and clear button for software, publications, and data table
+			for (var i = 0; i < tabCount; i++) {
 
-			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+				var tabName = tabList[i].textContent.toLowerCase(); //name of tab
 
-			if(tabName == "software"){
-				var tabTable = $('#tabs0 table'); //table within this tab
-				var tabHeaders = getTableHeaders(tabTable);
+				if (tabName == "software") {
+					var tabTable = $('#tabs0 table'); //table within this tab
+					var tabHeaders = getTableHeaders(tabTable);
 
-				var sw_options = {
-				  valueNames: tabHeaders
-				};
-
-				swList = new List(tabName, sw_options);
-
-				$("#clear0").click(function() {
-					var currId = this.id.match(/\d+/g);
-					$("#search" + currId[0]).val("");
-					swList.search();
-				});
-			}
-
-			if(tabName == "publications"){
-				var tabTable = $('#tabs1 table'); //table within this tab
-				var tabHeaders = getTableHeaders(tabTable);
-
-				var pub_options = {
-				  valueNames: tabHeaders
-				};
-
-				pubList = new List(tabName, pub_options);
-
-				$("#clear1").click(function() {
-					var currId = this.id.match(/\d+/g);
-					$("#search" + currId[0]).val("");
-					pubList.search();
-				});
-
-			}
-
-			if(tabName == "data"){
-				var tabTable = $('#tabs2 table'); //table within this tab
-				var tabHeaders = getTableHeaders(tabTable);
-
-				var data_options = {
-				  valueNames: tabHeaders
-				};
-
-				dataList = new List(tabName, data_options);
-
-				$("#clear2").click(function() {
-					var currId = this.id.match(/\d+/g);
-					$("#search" + currId[0]).val("");
-					dataList.search();
-				});
-
-			}
-
-			if(tabName == "examples"){
-				var tabTable = $('#tabs3 table'); //table within this tab
-				var tabHeaders = getTableHeaders(tabTable);
-
-				var examples_options = {
-				  valueNames: tabHeaders
-				};
-
-				exList = new List(tabName, examples_options);
-
-				$("#clear3").click(function() {
-					var currId = this.id.match(/\d+/g);
-					$("#search" + currId[0]).val("");
-					exList.search();
-				});
-
-			}
-
-			if(tabName == "search"){
-
-				var table_clone = $('#tabs table').clone();
-				for (var k=0; k<table_clone.length; k++){
-					var searchHeaders = getTableHeaders(table_clone[k]);
-					var search_options = {
-						  valueNames: searchHeaders
+					var sw_options = {
+						valueNames: tabHeaders
 					};
 
-					if (table_clone[k].id == "sftwr"){
-						$("#softwareSearch #sftwrTable").append(table_clone[k]);
-						//tables are hidden initially
-						$("#softwareSearch #sftwrTable").hide();
-						ssftList = new List("softwareSearch", search_options);
-					}
-					else if (table_clone[k].id == "pubs"){
+					swList = new List(tabName, sw_options);
 
-						$("#publicationsSearch #pubTable").append(table_clone[k]);
-						$("#publicationsSearch #pubTable").hide();
-						spubList = new List("publicationsSearch", search_options);
-					}
-					else if (table_clone[k].id == "examples"){
+					$("#clear0").click(function () {
+						var currId = this.id.match(/\d+/g);
+						$("#search" + currId[0]).val("");
+						swList.search();
+					});
+				}
 
-						$("#examplesSearch #examplesTable").append(table_clone[k]);
-						$("#examplesSearch #examplesTable").hide();
-						sxampleList = new List("examplesSearch", search_options);
-					}
-					else{
-						$("#dataSearch #dataTable").append(table_clone[k]);
-						$("#dataSearch #dataTable").hide();
-						sdtList = new List("dataSearch", search_options);
-					}
+				if (tabName == "publications") {
+					var tabTable = $('#tabs1 table'); //table within this tab
+					var tabHeaders = getTableHeaders(tabTable);
 
+					var pub_options = {
+						valueNames: tabHeaders
+					};
+
+					pubList = new List(tabName, pub_options);
+
+					$("#clear1").click(function () {
+						var currId = this.id.match(/\d+/g);
+						$("#search" + currId[0]).val("");
+						pubList.search();
+					});
 
 				}
 
-				$("#clear300").click(function() {
-					var currId = this.id.match(/\d+/g);
-					$("#search" + currId[0]).val("");
-					if (ssftList != "")
-						ssftList.search();
-					if (spubList != "")
-						spubList.search();
-					if (sdtList != "")
-						sdtList.search();
-					if (sxampleList != "")
-						sxampleList.search()
-					//when search is cleared tables need to be hidden
-					$("#softwareSearch #sftwrTable").hide();
-					$("#publicationsSearch #pubTable").hide();
-					$("#dataSearch #dataTable").hide();
-					$("#examplesSearch #examplesTable").hide();
+				if (tabName == "data") {
+					var tabTable = $('#tabs2 table'); //table within this tab
+					var tabHeaders = getTableHeaders(tabTable);
 
-				});
+					var data_options = {
+						valueNames: tabHeaders
+					};
 
+					dataList = new List(tabName, data_options);
+
+					$("#clear2").click(function () {
+						var currId = this.id.match(/\d+/g);
+						$("#search" + currId[0]).val("");
+						dataList.search();
+					});
+
+				}
+
+				if (tabName == "examples") {
+					var tabTable = $('#tabs3 table'); //table within this tab
+					var tabHeaders = getTableHeaders(tabTable);
+
+					var examples_options = {
+						valueNames: tabHeaders
+					};
+
+					exList = new List(tabName, examples_options);
+
+					$("#clear3").click(function () {
+						var currId = this.id.match(/\d+/g);
+						$("#search" + currId[0]).val("");
+						exList.search();
+					});
+
+				}
+
+				if (tabName == "search") {
+
+					var table_clone = $('#tabs table').clone();
+					for (var k = 0; k < table_clone.length; k++) {
+						var searchHeaders = getTableHeaders(table_clone[k]);
+						var search_options = {
+							valueNames: searchHeaders
+						};
+
+						if (table_clone[k].id == "sftwr") {
+							$("#softwareSearch #sftwrTable").append(table_clone[k]);
+							//tables are hidden initially
+							$("#softwareSearch #sftwrTable").hide();
+							ssftList = new List("softwareSearch", search_options);
+						}
+						else if (table_clone[k].id == "pubs") {
+
+							$("#publicationsSearch #pubTable").append(table_clone[k]);
+							$("#publicationsSearch #pubTable").hide();
+							spubList = new List("publicationsSearch", search_options);
+						}
+						else if (table_clone[k].id == "examples") {
+
+							$("#examplesSearch #examplesTable").append(table_clone[k]);
+							$("#examplesSearch #examplesTable").hide();
+							sxampleList = new List("examplesSearch", search_options);
+						}
+						else {
+							$("#dataSearch #dataTable").append(table_clone[k]);
+							$("#dataSearch #dataTable").hide();
+							sdtList = new List("dataSearch", search_options);
+						}
+
+
+					}
+
+					$("#clear300").click(function () {
+						var currId = this.id.match(/\d+/g);
+						$("#search" + currId[0]).val("");
+						if (ssftList != "")
+							ssftList.search();
+						if (spubList != "")
+							spubList.search();
+						if (sdtList != "")
+							sdtList.search();
+						if (sxampleList != "")
+							sxampleList.search()
+						//when search is cleared tables need to be hidden
+						$("#softwareSearch #sftwrTable").hide();
+						$("#publicationsSearch #pubTable").hide();
+						$("#dataSearch #dataTable").hide();
+						$("#examplesSearch #examplesTable").hide();
+
+					});
+
+				}
 			}
+
+
+
+			//set the click action for the back button on the leaving window.
+			$('#back').click(function () {
+				cancelLeaving(); //cancel leaving, user clicks 'back'
+			});
+
+			//for any links with the 'external' class, set the click event
+			console.log($('a.external'));
+			$('a.external').click(function (ev) {
+				console.log("link clicked");
+				//prevent the default action of the event, this will stop the href in the anchor being followed
+				//before the animation has started, u can also use return false;
+				ev.preventDefault();
+				//stop any actions if a new link is clicked.
+				cancelLeaving();
+				//store a reference to the anchor tag
+				var $self = $(this);
+				showLeavingMessage($self);
+
+				leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+			});
+
 		}
-	
+		);
 
 
-		//set the click action for the back button on the leaving window.
-		$('#back').click(function () {
-			cancelLeaving(); //cancel leaving, user clicks 'back'
-		});
-
-		//for any links with the 'external' class, set the click event
-		console.log($('a.external'));
-		$('a.external').click(function (ev) {
-			console.log("link clicked");
-			//prevent the default action of the event, this will stop the href in the anchor being followed
-			//before the animation has started, u can also use return false;
-			ev.preventDefault();
-			//stop any actions if a new link is clicked.
-			cancelLeaving();
-			//store a reference to the anchor tag
-			var $self = $(this);
-			showLeavingMessage($self);
-
-			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
-		});
-
-}
-);
-
-
-var leaving_timeout;
+		var leaving_timeout;
 
 		function leave(leavingLink) {
 			//open an external link
@@ -303,670 +303,1367 @@ var leaving_timeout;
 			//cancel leaving.  hide the leaving box
 			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
 			$('#overlay').hide();
-		}	
-				
-		
-		
+		}
 
 
-function jump(h){
-    var url = location.href;
-    location.href = "#"+h;
-        history.replaceState(null,null,url)
-}
 
-function swSearch(link){
-	var search_text = "";
-	if(link.hash)
-		search_text = link.hash.replace("#", "");
-	else
-		search_text = link;
-	$('#tabs').tabs({active: 0}); //publications tab
-	var search_box = $("#search0");
-	search_box.val(search_text);
 
-	setTimeout(function(){
-		$('html, body').animate({
-			scrollTop: $("#tabs").offset().top
-		}, 0);
-		search_box.focus();
-		search_box.select();
-		swList.search(search_text);
 
-	},300);
-}
+		function jump(h) {
+			var url = location.href;
+			location.href = "#" + h;
+			history.replaceState(null, null, url)
+		}
 
-function pubSearch(link){
-	var search_text = "";
-	if(link.hash)
-		search_text = link.hash.replace("#", "");
-	else
-		search_text = link;
-	$('#tabs').tabs({active: 1}); //publications tab
-	var search_box = $("#search1");
-	search_box.val(search_text);
-
-	setTimeout(function(){
-		$('html, body').animate({
-			scrollTop: $("#tabs").offset().top
-		}, 0);
-		search_box.focus();
-		search_box.select();
-		pubList.search(search_text);
-	},300);
-}
-
-function dataSearch(link){
-	var search_text = "";
-	if(link.hash)
-		search_text = link.hash.replace("#", "");
-	else
-		search_text = link;
-	$('#tabs').tabs({active: 2}); //publications tab
-	var search_box = $("#search2");
-	search_box.val(search_text);
-
-	setTimeout(function(){
-		$('html, body').animate({
-			scrollTop: $("#tabs").offset().top
-		}, 0);
-		search_box.focus();
-		search_box.select();
-		dataList.search(search_text);
-	},300);
-}
-
-function exSearch(link){
-	var search_text = "";
-	if(link.hash)
-		search_text = link.hash.replace("#", "");
-	else
-		search_text = link;
-	$('#tabs').tabs({active: 3}); //examples tab
-	var search_box = $("#search3");
-	search_box.val(search_text);
-
-	setTimeout(function(){
-		$('html, body').animate({
-			scrollTop: $("#tabs").offset().top
-		}, 0);
-		search_box.focus();
-		search_box.select();
-		dataList.search(search_text);
-	},300);
-}
-
-function allSearch(this_search){
-	if(this_search.value != "" && this_search.value.length >= 3){
-		var value = this_search.value;
-		//TODO: Implement Stop Words
-		ssftList.search(value);
-
-		//hide table if there are no rows that match the search term
-		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
-			$("#softwareSearch #sftwrTable").show();
-		else
-			$("#softwareSearch #sftwrTable").hide();
-
-		if(spubList != ""){
-			var value = this_search.value;
-			spubList.search(value);
-
-			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
-				$("#publicationsSearch #pubTable").show();
+		function swSearch(link) {
+			var search_text = "";
+			if (link.hash)
+				search_text = link.hash.replace("#", "");
 			else
+				search_text = link;
+			$('#tabs').tabs({ active: 0 }); //publications tab
+			var search_box = $("#search0");
+			search_box.val(search_text);
+
+			setTimeout(function () {
+				$('html, body').animate({
+					scrollTop: $("#tabs").offset().top
+				}, 0);
+				search_box.focus();
+				search_box.select();
+				swList.search(search_text);
+
+			}, 300);
+		}
+
+		function pubSearch(link) {
+			var search_text = "";
+			if (link.hash)
+				search_text = link.hash.replace("#", "");
+			else
+				search_text = link;
+			$('#tabs').tabs({ active: 1 }); //publications tab
+			var search_box = $("#search1");
+			search_box.val(search_text);
+
+			setTimeout(function () {
+				$('html, body').animate({
+					scrollTop: $("#tabs").offset().top
+				}, 0);
+				search_box.focus();
+				search_box.select();
+				pubList.search(search_text);
+			}, 300);
+		}
+
+		function dataSearch(link) {
+			var search_text = "";
+			if (link.hash)
+				search_text = link.hash.replace("#", "");
+			else
+				search_text = link;
+			$('#tabs').tabs({ active: 2 }); //publications tab
+			var search_box = $("#search2");
+			search_box.val(search_text);
+
+			setTimeout(function () {
+				$('html, body').animate({
+					scrollTop: $("#tabs").offset().top
+				}, 0);
+				search_box.focus();
+				search_box.select();
+				dataList.search(search_text);
+			}, 300);
+		}
+
+		function exSearch(link) {
+			var search_text = "";
+			if (link.hash)
+				search_text = link.hash.replace("#", "");
+			else
+				search_text = link;
+			$('#tabs').tabs({ active: 3 }); //examples tab
+			var search_box = $("#search3");
+			search_box.val(search_text);
+
+			setTimeout(function () {
+				$('html, body').animate({
+					scrollTop: $("#tabs").offset().top
+				}, 0);
+				search_box.focus();
+				search_box.select();
+				dataList.search(search_text);
+			}, 300);
+		}
+
+		function allSearch(this_search) {
+			if (this_search.value != "" && this_search.value.length >= 3) {
+				var value = this_search.value;
+				//TODO: Implement Stop Words
+				ssftList.search(value);
+
+				//hide table if there are no rows that match the search term
+				if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+					$("#softwareSearch #sftwrTable").show();
+				else
+					$("#softwareSearch #sftwrTable").hide();
+
+				if (spubList != "") {
+					var value = this_search.value;
+					spubList.search(value);
+
+					if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+						$("#publicationsSearch #pubTable").show();
+					else
+						$("#publicationsSearch #pubTable").hide();
+				}
+
+				if (sdtList != "") {
+					var value = this_search.value;
+					sdtList.search(value);
+
+					if ($("#dataSearch #dataTable tbody").children().length != 0)
+						$("#dataSearch #dataTable").show();
+					else
+						$("#dataSearch #dataTable").hide();
+				}
+
+				if (sxampleList != "") {
+					var value = this_search.value;
+					sdtList.search(value);
+
+					if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+						$("#examplesSearch #examplesTable").show();
+					else
+						$("#examplesSearch #examplesTable").hide();
+				}
+
+			}
+			else {
+				//if search_term is empty or not 3 chars in length, make sure the tables are hidden
 				$("#publicationsSearch #pubTable").hide();
-		}
-
-		if(sdtList != ""){
-			var value = this_search.value;
-			sdtList.search(value);
-
-			if ($("#dataSearch #dataTable tbody").children().length != 0)
-				$("#dataSearch #dataTable").show();
-			else
+				$("#softwareSearch #sftwrTable").hide();
 				$("#dataSearch #dataTable").hide();
+			}
 		}
 
-		if(sxampleList != ""){
-			var value = this_search.value;
-			sdtList.search(value);
+		function getTableHeaders(table) {
+			var this_table;
 
-			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
-				$("#examplesSearch #examplesTable").show();
+			if (table[0])
+				this_table = table[0];
 			else
-				$("#examplesSearch #examplesTable").hide();
+				this_table = table;
+
+			var headerRow = this_table.tHead.rows[0].cells; //header row of table
+			var tableHeaders = [];
+
+			for (var j = 0; j < headerRow.length; j++)
+				tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+			return tableHeaders;
 		}
 
-	}
-	else{
-		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
-		$("#publicationsSearch #pubTable").hide();
-		$("#softwareSearch #sftwrTable").hide();
-		$("#dataSearch #dataTable").hide();
-	}
-}
+		function licenseInfo(short_nm, long_nm, link, description, event) {
 
-function getTableHeaders(table){
-	var this_table;
+			var x = event.clientX;
+			var y = event.clientY;
 
-	if(table[0])
-		this_table = table[0];
-	else
-		this_table = table;
+			$("#dialog").removeClass("ribbon-dialog");
+			$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+			$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
 
-	var headerRow = this_table.tHead.rows[0].cells; //header row of table
-	var tableHeaders = [];
+			if (short_nm != "") {
+				$("#dialog").empty().dialog({
+					position: [x, y - 20],
+					title: short_nm
+				});
 
-	for (var j=0; j<headerRow.length; j++)
-		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+				if (description != "")
+					$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+				else
+					$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
 
-	return tableHeaders;
-}
-
-function licenseInfo(short_nm, long_nm, link, description, event){
-
-	var x=event.clientX;
-	var y=event.clientY;
-
-	$( "#dialog" ).removeClass("ribbon-dialog");
-	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
-	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
-
-	if(short_nm != ""){
-		$( "#dialog" ).empty().dialog({
-		position: [x , y - 20],
-		title: short_nm
-		});
-
-		if(description != "")
-			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
-		else
-			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
-
-		$(".ui-dialog").mouseleave( function () {
-			 $( "#dialog" ).dialog( "close" );
-		  });
-	}
-}
-
-function dateInfo(ribbon, event){
-	if(ribbon !="")
-	{
-		var date_id = document.getElementById(ribbon).firstChild.id;
-		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
-		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
-
-		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
-		var x=event.clientX;
-		var y=event.clientY;
-		var text = "";
-		var background = "";
-
-		if(ribbon_type == "NEW"){
-			text = "CREATED";
-			$(".ui-dialog").removeClass('vertical-green');
-			background = "vertical-red";
-		}
-		else{
-			text = ribbon_type;
-			$(".ui-dialog").removeClass('vertical-red');
-			background = "vertical-green";
+				$(".ui-dialog").mouseleave(function () {
+					$("#dialog").dialog("close");
+				});
+			}
 		}
 
-		$( "#dialog" ).empty().dialog({
-		position: [x , y - 20],
-		title: text + ": " + date,
-		});
+		function dateInfo(ribbon, event) {
+			if (ribbon != "") {
+				var date_id = document.getElementById(ribbon).firstChild.id;
+				var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+				var date = date_id.replace(str_pattern, "$2-$3-$1"); //full date string
 
-		$( "#dialog" ).addClass("ribbon-dialog");
-		$(".ui-dialog").addClass(background + " ribbon-dialog");
-		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+				var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+				var x = event.clientX;
+				var y = event.clientY;
+				var text = "";
+				var background = "";
+
+				if (ribbon_type == "NEW") {
+					text = "CREATED";
+					$(".ui-dialog").removeClass('vertical-green');
+					background = "vertical-red";
+				}
+				else {
+					text = ribbon_type;
+					$(".ui-dialog").removeClass('vertical-red');
+					background = "vertical-green";
+				}
+
+				$("#dialog").empty().dialog({
+					position: [x, y - 20],
+					title: text + ": " + date,
+				});
+
+				$("#dialog").addClass("ribbon-dialog");
+				$(".ui-dialog").addClass(background + " ribbon-dialog");
+				$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
 
 
 
-		$(".ui-dialog").mouseleave( function () {
-			 $( "#dialog" ).dialog( "close" );
-		});
-	}
-}
-
+				$(".ui-dialog").mouseleave(function () {
+					$("#dialog").dialog("close");
+				});
+			}
+		}
 </script>
-<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div>
-      <div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search' maxlength="30"></input><button id='header_button'>Search</button></div></div></header>
-  <h2><a href='http://www.darpa.mil/program/active-authentication' class='programlink'>Active Authentication (AA)</a></h2>
-<div class='left-paragraph'><p>The Active Authentication (AA) program seeks to develop novel ways of validating the identity of computer users by focusing on the unique aspects of individuals through software-based biometrics. Biometrics are defined as the characteristics used to recognize individuals based on one or more intrinsic physical or behavioral traits. This program is focused on behavioral biometrics.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-angelos-keromytis' class='programmanagerlink'>Dr. Angelos Keromytis</a></p><p>Contact: <a href='mailto:angelos.keromytis@darpa.mil'>angelos.keromytis@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: February 21, 2017</p></div>
-<div class='right-image'><img src="AA-image.png"/></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Software</a></li><li><a href='#tabs1'>Publications</a></li><li><a href='#tabs300'>Search</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Search' id='search0'/><button class='clear_button' id='clear0'>Clear</button><table id='sftwr' class='tablesorter'>
- <thead>
- <tr><th>Team</th><th>Project</th><th>Category</th><th>Code</th><th>Description</th><th>License</th></tr>
- </thead>
- <tbody  class='list'><TR>
-  <TD class='team'>Allure Security Technology, Inc. <a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'>RUU Active Authentication Sensor for Windows</TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
- <TD class=description> Software for collecting user OS interactions, generating a discriminative user model, and taking appropriate masquerader mitigation measures for the Windows platform. </TD>
-<TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
- </TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc. <a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'>Decoy Document Distributor Tool for Windows</TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
- <TD class=description> Software for distributing deceptive content to Windows computers to serve as tripwires to aid in sensor authentication decisions. </TD>
-<TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
- </TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc. <a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'>RUU Active Authentication Sensor for Mac</TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
- <TD class=description> Software for collecting user OS interactions, generating a discriminative user model, and taking appropriate masquerader mitigation measures for Mac devices. </TD>
-<TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
- </TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc. <a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'>Decoy Document Distributor Tool for Mac</TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
- <TD class=description> Software for distributing deceptive content to Mac machines to serve as tripwires to aid in sensor authentication decisions. </TD>
-<TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
- </TR>
-<TR>
-  <TD class='team'>BehavioSec <a href='#BehavioSec' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'>Data-Collector-Software</TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
- <TD class=description> Behavioral data gatherer for Microsoft Windows desktop computers. </TD>
-<TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
- </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University <a href='#Louisiana Tech University' onclick='pubSearch(this)'>(publications)</a></TD>
-         <TD width='202' class='project'>Context-Aware Active Authentication using Touch Gestures, Typing Patterns and Body Movement</TD>
-         <TD class=category>Identity Management</TD>
-         <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
-         <TD class=description> Design, develop and evaluate a desktop based active authentication system using keystroke timing based biometric features. In addition, various analyses, such as solution scalability and stability, longitudinal degradation, impact of linguistic and cognitive context, feature transformation, and review of population statistics based attacks were performed. </TD>
-         <TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
-     </TR>
+	<div id="overlay">
+		<div class="leavingbox">
+			<p>You are now leaving the DARPA.mil website that is under the control and management of DARPA. The appearance of hyperlinks
+				does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained
+				therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense
+				information, it does not exercise editorial control over all of the information that you may find at these locations.
+				Such links are provided consistent with the stated purpose of this website.</p>
+			<p>After reading this message, click
+				<span id=goto_link></span> to continue immediately.</p>
+			<p>
+				<a id="back" href="#">Go Back</a>
+			</p>
+		</div>
+	</div>
+	<header class='darpa-header'>
+		<div class='darpa-header-images'>
+			<a href='http://www.darpa.mil/'>
+				<img class='darpa-logo' src='darpa-transparent-v2.png'>
+			</a>
+			<a href='index.html' class='programlink'>
+				<img src='Open-Catalog-Single-Big.png'>
+			</a>
+		</div>
+		<div class='darpa-header-text no-space'>
+			<span>
+				<font color='white'> / </font>
+				<a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a>
+			</span>
+		</div>
+		<div class='catalog_search_outer'>
+			<div class='catalog_search_inner'>
+				<input id='header_search' type='search' maxlength="30"></input>
+				<button id='header_button'>Search</button>
+			</div>
+		</div>
+	</header>
+	<h2>
+		<a href='http://www.darpa.mil/program/active-authentication' class='programlink'>Активная Аутентификация (AA)</a>
+	</h2>
+	<div class='left-paragraph'>
+		<p>Программа Активной Аутентификации (Active Authentication (AA) ищет способы разработать неизведанные способы 
+				проверки идентичности компьютерных пользователей, фокусируясь на уникальных аспектах
+				индивидуумов через основанную на программном обеспечении биометрику. Биометрика определяется как
+				характеристики используемые для опознавания индивиуумов на основании одного или более свойственных
+				физических или поведенческих черт. Эта программа сфокусирована на поведенческой биометрике.
+			<p>
+				<p>Program Manager:
+					<a href='http://www.darpa.mil/staff/dr-angelos-keromytis' class='programmanagerlink'>Dr. Angelos Keromytis</a>
+				</p>
+				<p>Contact:
+					<a href='mailto:angelos.keromytis@darpa.mil'>angelos.keromytis@darpa.mil</a>
+					<p>
+						<p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions
+							contained therein are those of the authors and should not be interpreted as necessarily representing the official
+							policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p>
+						<ul>
+							<li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information,
+								a link to an external project page or contact information, and where possible a link to the code repository for the
+								project.</li>
+						</ul>
+						<ul>
+							<li>The Publications Table contains author(s), title, and links to peer-reviewed articles related to specific DARPA programs.</li>
+						</ul>
+						<p>Report a problem:
+							<a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a>
+						</p>
+						<p>Last updated: February 21, 2017</p>
+	</div>
+	<div class='right-image'>
+		<img src="AA-image.png" />
+	</div>
+	<div id='dialog'></div>
+	<div id='tabs' class='table-tabs'>
+		<ul>
+			<li>
+				<a href='#tabs0'>Software</a>
+			</li>
+			<li>
+				<a href='#tabs1'>Publications</a>
+			</li>
+			<li>
+				<a href='#tabs300'>Search</a>
+			</li>
+		</ul>
+		<div id='software'>
+			<div id='tabs0'>
+				<input class='search' placeholder='Search' id='search0' />
+				<button class='clear_button' id='clear0'>Clear</button>
+				<table id='sftwr' class='tablesorter'>
+					<thead>
+						<tr>
+							<th>Команда</th>
+							<th>Проект</th>
+							<th>Категория</th>
+							<th>Код</th>
+							<th>Описание</th>
+							<th>Лицензия</th>
+						</tr>
+					</thead>
+					<tbody class='list'>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Активный сенсор Аутентификации RUU для Windows</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description> Программное обеспечения для сбора взаимодейтсвия пользователя с ОС, формирующее
+								отчетливую модель пользователя, и принимающее соотвествующие смягчающие меры по маскарадированию (сокрытию)
+								для платформы Windows. </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Инструмент распространяющий документы-приманки для Windows</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description>
+								Программное обеспечение распространяющее обманное содержимое на Windows компьютерах служащее как "растяжки" помогающие
+								в решениях сенсорной аутентификации. </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Активный сенсор Аутентификации RUU для Mac</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description> 
+								Программное обеспечения для сбора взаимодейтсвия пользователя с ОС, формирующее
+								отчетливую модель пользователя, и принимающее соотвествующие смягчающие меры по маскарадированию (сокрытию)
+								для устройств Mac. </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a href='#Allure Security Technology, Inc.' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Инструмент распространяющий документы-приманки для Mac</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description> 
+								Программное обеспечение распространяющее обманное содержимое на Mac компьютерах служащее как "растяжки" помогающие
+								в решениях сенсорной аутентификации. </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BehavioSec
+								<a href='#BehavioSec' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Программное обеспечение сбора данных</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description> Сборщик поведенческих данных для настольных компьютеров Windows. </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a href='#Louisiana Tech University' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Контекстно-зависимая Активная Аутентификация с использованием Тач жестов, Шаблонов печати и движений тела</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description> 
+								Проектирование, разработка и оценка система активной аутентификации для настольных компьютеров использующая 
+								биометрические особенности времени нажатия на кнопок.
+								В дополнение, были проведены различные анализы, такие как масштабируемость решения и стабильное, деградация по расстоянию,
+								влияния лингвистического и когнитивного контекста, преобразования признаков, и обзор атак на основании демографической статистики.
+								</TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
 
-<TR>
-  <TD class='team'>New York Institute of Technology <a href='#New York Institute of Technology' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'>Keystroke, Pausality, and Linguistic Feature Extractors for Typing Data</TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a> </TD>
- <TD class=description> The software implements feature extractor modules for typing data used in AA Phase 1 effort. Due to Louisiana Tech University ownership of the data, please reference the Louisiana Tech University software entry. </TD>
-<TD class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </TD>
- </TR>
-<TR>
-  <TD class='team'>University of Maryland <a href='#University of Maryland' onclick='pubSearch(this)'>(publications)</a></TD>
- <TD width='202' class='project'><a href='http://www.vizweb.org/' class='external' target='_blank'>Screen Web Interface Visual Analysis Software</a></TD>  <TD class=category>Identity Management</TD>
-  <TD class=code> <a href=https://bitbucket.org/rmardiko/vizweb.git class='external' target='_blank'>https://bitbucket.org/rmardiko/vizweb.git</a> </TD>
- <TD class=description> This is software for computing visual features from screen shots. (Java) </TD>
-<TD class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </TD>
- </TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a href='#New York Institute of Technology' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>Экстрактор нажатия клавиш, задержек, и лингвистических признаков для печатаемых данных</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href='mailto:anna.weeks@us.af.mil'>anna.weeks@us.af.mil</a>
+							</TD>
+							<TD class=description> 
+								Программное обеспечение реализовывает модули экстрактора признаков для печатных данных используемых в Фазе 1 АА работ. Из-за
+								владения данными Техническим Университетом Луизианы (Louisiana Tech University), пожалуйста указывайте позицию програмного обеспечения
+								Технического Университета Луизианы. </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a href='#University of Maryland' onclick='pubSearch(this)'>(публикации)</a>
+							</TD>
+							<TD width='202' class='project'>
+								<a href='http://www.vizweb.org/' class='external' target='_blank'>
+									Программное обеспечение Визуального Анализа Веб-интерфейсов</a>
+							</TD>
+							<TD class=category>Identity Management</TD>
+							<TD class=code>
+								<a href=https://bitbucket.org/rmardiko/vizweb.git class='external' target='_blank'>https://bitbucket.org/rmardiko/vizweb.git</a>
+							</TD>
+							<TD class=description> Это программное обеспечения для вычисления визуальных признаков на основании снимков экрана. (Java) </TD>
+							<TD class=license>
+								<span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span>
+							</TD>
+						</TR>
 
-</tbody>
-</table>
-</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Search' id='search1'/><button class='clear_button' id='clear1'>Clear</button><table id='pubs' class='tablesorter'>
- <thead>
- <tr><th>Team</th><th>Title</th><th>Link</th></tr>
- </thead>
- <tbody  class='list'>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Bait and Snitch: Defending Computer Systems with Decoys</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/ssi.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/ssi.pdf</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-         <TD class='title'>Decoy Applications for Continuous Authentication on Mobile Devices </TD>
-         <TD class='link'><a href='https://cups.cs.cmu.edu/soups/2014/workshops/papers/decoy_salem_9.pdf' class='external' target='_blank'>https://cups.cs.cmu.edu/soups/2014/workshops/papers/decoy_salem_9.pdf</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Decoy Document Deployment for Effective Masquerade Attack Detection</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/Dimva_2011_final.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/Dimva_2011_final.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Fog Computing: Mitigating Insider Data Theft Attacks in the Cloud</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/Fog_Computing_Position_Paper_WRIT_2012.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/Fog_Computing_Position_Paper_WRIT_2012.pdf</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-         <TD class='title'>Fox in the Trap: Thwarting Masqueraders via Automated Decoy Document Deployment</TD>
-         <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/eurosec_15_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/eurosec_15_0.pdf</a></TD>
-     </TR>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div id='publications'>
+			<div id='tabs1'>
+				<input class='search' placeholder='Search' id='search1' />
+				<button class='clear_button' id='clear1'>Clear</button>
+				<table id='pubs' class='tablesorter'>
+					<thead>
+						<tr>
+							<th>Команда</th>
+							<th>Название</th>
+							<th>Ссылка</th>
+						</tr>
+					</thead>
+					<tbody class='list'>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Наживка и донос: Защита Компьютерных системы с помощью приманок<br/>
+								(Bait and Snitch: Defending Computer Systems with Decoys)
+							</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/ssi.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/ssi.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Приложения приманки для постоянной аутентификации на мобильных устройствах<br/>
+								Decoy Applications for Continuous Authentication on Mobile Devices </TD>
+							<TD class='link'>
+								<a href='https://cups.cs.cmu.edu/soups/2014/workshops/papers/decoy_salem_9.pdf' class='external' target='_blank'>https://cups.cs.cmu.edu/soups/2014/workshops/papers/decoy_salem_9.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Расположение документов-приманок для эффективного сокрытия обнаружения атаки<br/>
+								Decoy Document Deployment for Effective Masquerade Attack Detection
+							</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/Dimva_2011_final.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/Dimva_2011_final.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Туманные вычисления: Смягчение инсайдерских атак кражи данных в облаках<br/>
+								Fog Computing: Mitigating Insider Data Theft Attacks in the Cloud
+							</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/Fog_Computing_Position_Paper_WRIT_2012.pdf' class='external'
+								 target='_blank'>http://ids.cs.columbia.edu/sites/default/files/Fog_Computing_Position_Paper_WRIT_2012.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Лиса в ловушке: Помехи маскарадингу чере Автоматическое развертывание документов-приманок<br/>
+								Fox in the Trap: Thwarting Masqueraders via Automated Decoy Document Deployment</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/eurosec_15_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/eurosec_15_0.pdf</a>
+							</TD>
+						</TR>
 
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Lost in Translation: Improving Decoy Documents via Automated Translation</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Measuring the Human Factor of Cyber Security</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/metrics_hst.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/metrics_hst.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Modeling User Search Behavior for Masquerade Detection</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/RAID_2011_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/RAID_2011_0.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>On the Design and Execution of Cyber-Security User Studies: Methodology</TD>  <TD class='link'><a href='http://academiccommons.columbia.edu/catalog/ac%3A142661' class='external' target='_blank'>http://academiccommons.columbia.edu/catalog/ac%3A142661</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>Software Decoys for Insider Threat</TD>  <TD class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/softwaredecoy_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/softwaredecoy_0.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-<TD class='title'>System level user behavior biometrics using Fisher features and Gaussian mixture models</TD>  <TD class='link'><a href='http://www.ieee-security.org/TC/SPW2013/papers/data/5017a052.pdf' class='external' target='_blank'>http://www.ieee-security.org/TC/SPW2013/papers/data/5017a052.pdf</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Allure Security Technology, Inc.<a name='Allure Security Technology, Inc.'></a></TD>
-         <TD class='title'>You are what you click: Using Decoys to Identify Mobile Device Attackers</TD>
-         <TD class='link'><a href='https://www.rsaconference.com/writable/presentations/file_upload/br-w04-you-are-what-you-click-using-decoys-to-identify-mobile-device-attackers.pdf' class='external' target='_blank'>https://www.rsaconference.com/writable/presentations/file_upload/br-w04-you-are-what-you-click-using-decoys-to-identify-mobile-device-attackers.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>AMI<a name='AMI'></a></TD>
-         <TD class='title'>Fingerprint Based Smart Phone Verification</TD>
-         <TD class='link'><a href='http://patents.justia.com/patent/20160342826' class='external' target='_blank'>http://patents.justia.com/patent/20160342826</a></TD>
-     </TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Потерянные в переводе: Улучшение документов приманок через автоматичесий перевод<br/>
+								Lost in Translation: Improving Decoy Documents via Automated Translation</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Измерение человеческого фактора в Кибер Безопасности<br/>
+								Measuring the Human Factor of Cyber Security</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/metrics_hst.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/metrics_hst.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Моделирование поведения поиска пользоваля для обнаружения маскарадинга<br/>
+								Modeling User Search Behavior for Masquerade Detection</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/RAID_2011_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/RAID_2011_0.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								О проектировании и исполнении Изучения пользователей в Кибер-Безопасности: Методологии<br/>
+								On the Design and Execution of Cyber-Security User Studies: Methodology</TD>
+							<TD class='link'>
+								<a href='http://academiccommons.columbia.edu/catalog/ac%3A142661' class='external' target='_blank'>http://academiccommons.columbia.edu/catalog/ac%3A142661</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Программные приманки для внутренних угроз<br/>
+								Software Decoys for Insider Threat</TD>
+							<TD class='link'>
+								<a href='http://ids.cs.columbia.edu/sites/default/files/softwaredecoy_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/softwaredecoy_0.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Биометрия пользовательского поведение системного уровня используя модели на основании критериев Фишера и моделей гауссовых смесей<br/>
+								System level user behavior biometrics using Fisher features and Gaussian mixture models</TD>
+							<TD class='link'>
+								<a href='http://www.ieee-security.org/TC/SPW2013/papers/data/5017a052.pdf' class='external' target='_blank'>http://www.ieee-security.org/TC/SPW2013/papers/data/5017a052.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Allure Security Technology, Inc.
+								<a name='Allure Security Technology, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								Вы это то что вы нажимаете: Использование приманок для идентификации атакующих мобильные устройства<br/>
+								You are what you click: Using Decoys to Identify Mobile Device Attackers</TD>
+							<TD class='link'>
+								<a href='https://www.rsaconference.com/writable/presentations/file_upload/br-w04-you-are-what-you-click-using-decoys-to-identify-mobile-device-attackers.pdf'
+								 class='external' target='_blank'>https://www.rsaconference.com/writable/presentations/file_upload/br-w04-you-are-what-you-click-using-decoys-to-identify-mobile-device-attackers.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>AMI
+								<a name='AMI'></a>
+							</TD>
+							<TD class='title'>
+								Верификация использованием отпечатков и смартфона<br/>
+								Fingerprint Based Smart Phone Verification</TD>
+							<TD class='link'>
+								<a href='http://patents.justia.com/patent/20160342826' class='external' target='_blank'>http://patents.justia.com/patent/20160342826</a>
+							</TD>
+						</TR>
 
-<TR>
-  <TD class='team'>BAE Systems<a name='BAE Systems'></a></TD>
-<TD class='title'>Keystroke dynamics for user authentication</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6239225&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6239225' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6239225&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6239225</a></TD>
-</TR>
-<TR>
-  <TD class='team'>BAE Systems<a name='BAE Systems'></a></TD>
-<TD class='title'>Mobile Device Based Gait Biometrics</TD>  <TD class='link'><a href='https://www.google.com/patents/US20150112603' class='external' target='_blank'>https://www.google.com/patents/US20150112603</a></TD>
-</TR>
-<TR>
-  <TD class='team'>BAE Systems<a name='BAE Systems'></a></TD>
-<TD class='title'>Speech recognition for vocalized and subvocal modes of production using surface EMG signals from the neck and face.</TD>  <TD class='link'><a href='http://www.bu.edu/nmrc/files/2011/01/c_010.pdf' class='external' target='_blank'>http://www.bu.edu/nmrc/files/2011/01/c_010.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>BAE Systems<a name='BAE Systems'></a></TD>
-<TD class='title'>Action recognition in spatiotemporal volume</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5543836&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5543836' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5543836&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5543836</a></TD>
-</TR>
-<TR>
-  <TD class='team'>BAE Systems<a name='BAE Systems'></a></TD>
-<TD class='title'>Intrinsic shape signatures: A shape descriptor for 3d object recognition</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5457637&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5457637' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5457637&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5457637</a></TD>
-</TR>
-<TR>
-  <TD class='team'>BehavioSec<a name='BehavioSec'></a></TD>
-<TD class='title'>Behavioral Biometrics for DARPA's active authentication program</TD>  <TD class='link'><a href='http://www.rsaconference.com/writable/presentations/file_upload/sec-t05_final.pdf' class='external' target='_blank'>http://www.rsaconference.com/writable/presentations/file_upload/sec-t05_final.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>BehavioSec<a name='BehavioSec'></a></TD>
-<TD class='title'>Continuous Authentication Using Behavioral Biometrics</TD>  <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040012-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040012-abs.html</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Coveros, Inc.<a name='Coveros, Inc.'></a></TD>
-<TD class='title'>Active Authentication Using System Event Monitoring</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/document/6560039/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6560039/</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Drexel<a name='Drexel'></a></TD>
-<TD class='title'>A Dataset for Active Linguistic Authentication</TD>  <TD class='link'><a href='http://www.springer.com/computer/security+and+cryptology/book/978-3-642-41147-2' class='external' target='_blank'>http://www.springer.com/computer/security+and+cryptology/book/978-3-642-41147-2</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Drexel<a name='Drexel'></a></TD>
-         <TD class='title'>Active Authentication Linguistic Modalities</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA593716' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA593716</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Drexel<a name='Drexel'></a></TD>
-         <TD class='title'>Active Authentication on Mobile Devices via Stylometry, GPS Location, Web Browsing Behavior, and Application Usage Patterns</TD>
-         <TD class='link'><a href='http://arxiv.org/pdf/1503.08479' class='external' target='_blank'>http://arxiv.org/pdf/1503.08479</a></TD>
-     </TR>
+						<TR>
+							<TD class='team'>BAE Systems
+								<a name='BAE Systems'></a>
+							</TD>
+							<TD class='title'>
+								Динамика нажатий на кноки для аутентификаии пользователей<br/>
+								Keystroke dynamics for user authentication</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6239225&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6239225'
+								 class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6239225&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6239225</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BAE Systems
+								<a name='BAE Systems'></a>
+							</TD>
+							<TD class='title'>
+								Биометрика мобильных устройств на основании походки<br/>
+								Mobile Device Based Gait Biometrics</TD>
+							<TD class='link'>
+								<a href='https://www.google.com/patents/US20150112603' class='external' target='_blank'>https://www.google.com/patents/US20150112603</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BAE Systems
+								<a name='BAE Systems'></a>
+							</TD>
+							<TD class='title'>
+								Распознавание голоса для <br/>
+								Speech recognition for vocalized and subvocal modes of production using surface EMG signals from the neck and face.</TD>
+							<TD class='link'>
+								<a href='http://www.bu.edu/nmrc/files/2011/01/c_010.pdf' class='external' target='_blank'>http://www.bu.edu/nmrc/files/2011/01/c_010.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BAE Systems
+								<a name='BAE Systems'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Action recognition in spatiotemporal volume</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5543836&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5543836'
+								 class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5543836&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5543836</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BAE Systems
+								<a name='BAE Systems'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Intrinsic shape signatures: A shape descriptor for 3d object recognition</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5457637&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5457637'
+								 class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=5457637&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D5457637</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BehavioSec
+								<a name='BehavioSec'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Behavioral Biometrics for DARPA's active authentication program</TD>
+							<TD class='link'>
+								<a href='http://www.rsaconference.com/writable/presentations/file_upload/sec-t05_final.pdf' class='external' target='_blank'>http://www.rsaconference.com/writable/presentations/file_upload/sec-t05_final.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>BehavioSec
+								<a name='BehavioSec'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Continuous Authentication Using Behavioral Biometrics</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040012-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040012-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Coveros, Inc.
+								<a name='Coveros, Inc.'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Active Authentication Using System Event Monitoring</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/6560039/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6560039/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								A Dataset for Active Linguistic Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.springer.com/computer/security+and+cryptology/book/978-3-642-41147-2' class='external' target='_blank'>http://www.springer.com/computer/security+and+cryptology/book/978-3-642-41147-2</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Active Authentication Linguistic Modalities</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA593716' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA593716</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Active Authentication on Mobile Devices via Stylometry, GPS Location, Web Browsing Behavior, and Application Usage
+								Patterns</TD>
+							<TD class='link'>
+								<a href='http://arxiv.org/pdf/1503.08479' class='external' target='_blank'>http://arxiv.org/pdf/1503.08479</a>
+							</TD>
+						</TR>
 
-<TR>
-  <TD class='team'>Drexel<a name='Drexel'></a></TD>
-<TD class='title'>Active Linguistic Authentication Revisited: Real-Time Stylometric Evaluation towards Multi-Modal Decision Fusion</TD>  <TD class='link'><a href='http://www.stolerman.net/papers/active_auth_ifip-wg11.9-2014.pdf' class='external' target='_blank'>http://www.stolerman.net/papers/active_auth_ifip-wg11.9-2014.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Drexel<a name='Drexel'></a></TD>
-<TD class='title'>Classify but Verify: Breaking the Closed-World Assumption in Stylometric Authorship Attribution</TD>  <TD class='link'><a href='http://www.stolerman.net/papers/classify_verify_ifip-wg11.9-2014.pdf' class='external' target='_blank'>http://www.stolerman.net/papers/classify_verify_ifip-wg11.9-2014.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Drexel<a name='Drexel'></a></TD>
-<TD class='title'>Decision Fusion for Multi-Modal Active Authentication</TD>  <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040029-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040029-abs.html</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Drexel<a name='Drexel'></a></TD>
-<TD class='title'>Keyboard Behavior Based Authentication for Security</TD>  <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040008-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040008-abs.html</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Drexel<a name='Drexel'></a></TD>
-         <TD class='title'>Mobile Active Authentication via Linguistic Modalities</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA621879' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA621879</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Drexel<a name='Drexel'></a></TD>
-         <TD class='title'>Multi-Modal Decision Fusion for Continuous Authentication</TD>
-         <TD class='link'><a href='http://lexfridman.com/publications/papers/2014-elsevier-cee-fridman-stolerman-multi-modal-decision-fusion-for-continuous-authentication.pdf' class='external' target='_blank'>http://lexfridman.com/publications/papers/2014-elsevier-cee-fridman-stolerman-multi-modal-decision-fusion-for-continuous-authentication.pdf</a></TD>
-     </TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Active Linguistic Authentication Revisited: Real-Time Stylometric Evaluation towards Multi-Modal Decision Fusion</TD>
+							<TD class='link'>
+								<a href='http://www.stolerman.net/papers/active_auth_ifip-wg11.9-2014.pdf' class='external' target='_blank'>http://www.stolerman.net/papers/active_auth_ifip-wg11.9-2014.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Classify but Verify: Breaking the Closed-World Assumption in Stylometric Authorship Attribution</TD>
+							<TD class='link'>
+								<a href='http://www.stolerman.net/papers/classify_verify_ifip-wg11.9-2014.pdf' class='external' target='_blank'>http://www.stolerman.net/papers/classify_verify_ifip-wg11.9-2014.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Decision Fusion for Multi-Modal Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040029-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040029-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Keyboard Behavior Based Authentication for Security</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040008-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040008-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Mobile Active Authentication via Linguistic Modalities</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA621879' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA621879</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Multi-Modal Decision Fusion for Continuous Authentication</TD>
+							<TD class='link'>
+								<a href='http://lexfridman.com/publications/papers/2014-elsevier-cee-fridman-stolerman-multi-modal-decision-fusion-for-continuous-authentication.pdf'
+								 class='external' target='_blank'>http://lexfridman.com/publications/papers/2014-elsevier-cee-fridman-stolerman-multi-modal-decision-fusion-for-continuous-authentication.pdf</a>
+							</TD>
+						</TR>
 
-<TR>
-  <TD class='team'>Drexel<a name='Drexel'></a></TD>
-<TD class='title'>User authentication through biometric sensors and decision fusion</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6552271' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6552271</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Iowa State University<a name='Iowa State University'></a></TD>
-         <TD class='title'>Capturing Cognitive Fingerprints for Active Authentication</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA611005' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA611005</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Iowa State University<a name='Iowa State University'></a></TD>
-         <TD class='title'>Capturing Cognitive Processing Time for Active Authentication</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA599700' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA599700</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Iowa State University<a name='Iowa State University'></a></TD>
-         <TD class='title'>Capturing Cognitive Fingerprints from Keystroke Dynamics for Active Authentication</TD>
-         <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040024-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040024-abs.html</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Kryptowire<a name='Kryptowire'></a></TD>
-         <TD class='title'>Authentication Feature and Model Selection using Penalty Algorithms</TD>
-         <TD class='link'><a href='https://www.usenix.org/system/files/conference/soups2016/way_2016_paper_murmuria.pdf' class='external' target='_blank'>https://www.usenix.org/system/files/conference/soups2016/way_2016_paper_murmuria.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Kryptowire<a name='Kryptowire'></a></TD>
-         <TD class='title'>Continuous Authentication on Mobile Devices Using Power Consumption, Touch Gestures and Physical Movement of Users</TD>
-         <TD class='link'><a href='http://cs.gmu.edu/~astavrou/research/Continuous_Auth_RAID15.pdf' class='external' target='_blank'>http://cs.gmu.edu/~astavrou/research/Continuous_Auth_RAID15.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Kryptowire<a name='Kryptowire'></a></TD>
-         <TD class='title'>Your Data in Your Hands: Privacy-preserving User Behavior Models for Context Computation</TD>
-         <TD class='link'><a href='http://conference.researchbib.com/view/event/62425' class='external' target='_blank'>http://conference.researchbib.com/view/event/62425</a>  <i>(to be Published)</i></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>A New Modality for Brain Activity-Based Biometric Authentication</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7358763/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7358763/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Beware Your Hands Reveal Your Secrets!</TD>
-         <TD class='link'><a href='https://experts.syr.edu/en/publications/beware-your-hands-reveal-your-secrets' class='external' target='_blank'>https://experts.syr.edu/en/publications/beware-your-hands-reveal-your-secrets</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Context-Aware Active Authentication Using Smartphone Accelerometer Measurements</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/6909965/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6909965/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Context-Aware Active Authentication using Touch Gestures, Typing Patterns and Body Movement</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=AD1005650' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=AD1005650</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Continuous Authentication with Cognition-centric Text Production and Revision Features</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/6996227/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6996227/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Cybersecurity Laboratory & Cybersecurity Research Program at the CRL</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA608802' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA608802</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-<TD class='title'>Examining a Large Keystroke Biometrics Dataset for Statistical-Attack Openings</TD>  <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2516960' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2516960</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Improvements to Keystroke-Based Authentication by Adding Linguistic Context</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7358766/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7358766/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Muddying The Multiword Expression Waters: How Cognitive Demand Affects Multiword Expression Production</TD>
-         <TD class='link'><a href='http://www.aclweb.org/anthology/W15-0914' class='external' target='_blank'>http://www.aclweb.org/anthology/W15-0914</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>On Humanoid Robots Imitating Human Touch Gestures on the Smart Phone</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7358781/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7358781/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Privacy-Preserving Population-Enhanced Biometric Key Generation Using Free-text Keystroke Data</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/6996244/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6996244/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-         <TD class='title'>Towards Robotic Robbery on the Touch Screen</TD>
-         <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2898353' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2898353</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-<TD class='title'>When Kids' Toys Breach Mobile Phone Security</TD>  <TD class='link'><a href='http://dl.acm.org/citation.cfm?id=2508859.2516659' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2508859.2516659</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Louisiana Tech University<a name='Louisiana Tech University'></a></TD>
-<TD class='title'>Which Verifiers Work?: A Benchmark Evaluation of Touch based Authentication Algorithms</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6712758&url=http%3A%2F%2Fieeexplore.ieee.org%2Fstamp%2Fstamp.jsp%3Ftp%3D%26arnumber%3D6712758' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6712758&url=http%3A%2F%2Fieeexplore.ieee.org%2Fstamp%2Fstamp.jsp%3Ftp%3D%26arnumber%3D6712758</a></TD>
-</TR>
-<TR>
-  <TD class='team'>Naval Research Laboratory<a name='Naval Research Laboratory'></a></TD>
-<TD class='title'>User Authentication from Web Browsing Behavior</TD>  <TD class='link'><a href='http://cryptome.org/2013/09/user-auth-browser.pdf' class='external' target='_blank'>http://cryptome.org/2013/09/user-auth-browser.pdf</a></TD>
-</TR>
-<TR>
-  <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-<TD class='title'>On Controlling Genuine Reject Rate in Multistage Biometric Verification</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6595874' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6595874</a></TD>
-</TR>
-<TR>
-  <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-<TD class='title'>Scan-based Evaluation for Continuous Keystroke Authentication Systems</TD>  <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040020-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040020-abs.html</a></TD>
-</TR>
-<TR>
-  <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-<TD class='title'>Snoop-forge-replay Attacks on Continuous Verification with Keystrokes</TD>  <TD class='link'><a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6425469&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6425469&tag=1</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-         <TD class='title'>A Multimodal Data Set for Evaluating Continuous Authentication Performance in Smartphones</TD>
-         <TD class='link'><a href='https://pdfs.semanticscholar.org/86b8/710f5e800a38b21c66dec6cb934539c8e2c6.pdf' class='external' target='_blank'>https://pdfs.semanticscholar.org/86b8/710f5e800a38b21c66dec6cb934539c8e2c6.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-         <TD class='title'>HMOG: New Behavioral Biometric Features for Continuous Authentication of Smartphone Users</TD>
-         <TD class='link'><a href='https://arxiv.org/abs/1501.01199' class='external' target='_blank'>https://arxiv.org/abs/1501.01199</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-         <TD class='title'>Investigating Cognitive Rhythms as a New Modality for Continuous Authentication</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA595913' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA595913</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>New York Institute of Technology<a name='New York Institute of Technology'></a></TD>
-         <TD class='title'>Secure Outsourced Biometric Authentication with Performance Evaluation on Smartphones</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6971118' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6971118</a></TD>
-     </TR>
+						<TR>
+							<TD class='team'>Drexel
+								<a name='Drexel'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								User authentication through biometric sensors and decision fusion</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6552271' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6552271</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Iowa State University
+								<a name='Iowa State University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Capturing Cognitive Fingerprints for Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA611005' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA611005</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Iowa State University
+								<a name='Iowa State University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Capturing Cognitive Processing Time for Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA599700' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA599700</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Iowa State University
+								<a name='Iowa State University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Capturing Cognitive Fingerprints from Keystroke Dynamics for Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040024-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040024-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Kryptowire
+								<a name='Kryptowire'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Authentication Feature and Model Selection using Penalty Algorithms</TD>
+							<TD class='link'>
+								<a href='https://www.usenix.org/system/files/conference/soups2016/way_2016_paper_murmuria.pdf' class='external' target='_blank'>https://www.usenix.org/system/files/conference/soups2016/way_2016_paper_murmuria.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Kryptowire
+								<a name='Kryptowire'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Continuous Authentication on Mobile Devices Using Power Consumption, Touch Gestures and Physical Movement of Users</TD>
+							<TD class='link'>
+								<a href='http://cs.gmu.edu/~astavrou/research/Continuous_Auth_RAID15.pdf' class='external' target='_blank'>http://cs.gmu.edu/~astavrou/research/Continuous_Auth_RAID15.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Kryptowire
+								<a name='Kryptowire'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Your Data in Your Hands: Privacy-preserving User Behavior Models for Context Computation</TD>
+							<TD class='link'>
+								<a href='http://conference.researchbib.com/view/event/62425' class='external' target='_blank'>http://conference.researchbib.com/view/event/62425</a>
+								<i>(to be Published)</i>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								A New Modality for Brain Activity-Based Biometric Authentication</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7358763/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7358763/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Beware Your Hands Reveal Your Secrets!</TD>
+							<TD class='link'>
+								<a href='https://experts.syr.edu/en/publications/beware-your-hands-reveal-your-secrets' class='external' target='_blank'>https://experts.syr.edu/en/publications/beware-your-hands-reveal-your-secrets</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Context-Aware Active Authentication Using Smartphone Accelerometer Measurements</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/6909965/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6909965/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Context-Aware Active Authentication using Touch Gestures, Typing Patterns and Body Movement</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=AD1005650' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=AD1005650</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Continuous Authentication with Cognition-centric Text Production and Revision Features</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/6996227/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6996227/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Cybersecurity Laboratory & Cybersecurity Research Program at the CRL</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA608802' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA608802</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Examining a Large Keystroke Biometrics Dataset for Statistical-Attack Openings</TD>
+							<TD class='link'>
+								<a href='http://dl.acm.org/citation.cfm?id=2516960' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2516960</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Improvements to Keystroke-Based Authentication by Adding Linguistic Context</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7358766/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7358766/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Muddying The Multiword Expression Waters: How Cognitive Demand Affects Multiword Expression Production</TD>
+							<TD class='link'>
+								<a href='http://www.aclweb.org/anthology/W15-0914' class='external' target='_blank'>http://www.aclweb.org/anthology/W15-0914</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								On Humanoid Robots Imitating Human Touch Gestures on the Smart Phone</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7358781/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7358781/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Privacy-Preserving Population-Enhanced Biometric Key Generation Using Free-text Keystroke Data</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/6996244/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/6996244/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Towards Robotic Robbery on the Touch Screen</TD>
+							<TD class='link'>
+								<a href='http://dl.acm.org/citation.cfm?id=2898353' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2898353</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								When Kids' Toys Breach Mobile Phone Security</TD>
+							<TD class='link'>
+								<a href='http://dl.acm.org/citation.cfm?id=2508859.2516659' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2508859.2516659</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Louisiana Tech University
+								<a name='Louisiana Tech University'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Which Verifiers Work?: A Benchmark Evaluation of Touch based Authentication Algorithms</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6712758&url=http%3A%2F%2Fieeexplore.ieee.org%2Fstamp%2Fstamp.jsp%3Ftp%3D%26arnumber%3D6712758'
+								 class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6712758&url=http%3A%2F%2Fieeexplore.ieee.org%2Fstamp%2Fstamp.jsp%3Ftp%3D%26arnumber%3D6712758</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Naval Research Laboratory
+								<a name='Naval Research Laboratory'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								User Authentication from Web Browsing Behavior</TD>
+							<TD class='link'>
+								<a href='http://cryptome.org/2013/09/user-auth-browser.pdf' class='external' target='_blank'>http://cryptome.org/2013/09/user-auth-browser.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								On Controlling Genuine Reject Rate in Multistage Biometric Verification</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6595874' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6595874</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Scan-based Evaluation for Continuous Keystroke Authentication Systems</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040020-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040020-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Snoop-forge-replay Attacks on Continuous Verification with Keystrokes</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6425469&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6425469&tag=1</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								A Multimodal Data Set for Evaluating Continuous Authentication Performance in Smartphones</TD>
+							<TD class='link'>
+								<a href='https://pdfs.semanticscholar.org/86b8/710f5e800a38b21c66dec6cb934539c8e2c6.pdf' class='external' target='_blank'>https://pdfs.semanticscholar.org/86b8/710f5e800a38b21c66dec6cb934539c8e2c6.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								HMOG: New Behavioral Biometric Features for Continuous Authentication of Smartphone Users</TD>
+							<TD class='link'>
+								<a href='https://arxiv.org/abs/1501.01199' class='external' target='_blank'>https://arxiv.org/abs/1501.01199</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Investigating Cognitive Rhythms as a New Modality for Continuous Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA595913' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA595913</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>New York Institute of Technology
+								<a name='New York Institute of Technology'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Secure Outsourced Biometric Authentication with Performance Evaluation on Smartphones</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6971118' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6971118</a>
+							</TD>
+						</TR>
 
-     <TR>
-         <TD class='team'>Novetta<a name='Novetta'></a></TD>
-         <TD class='title'>Improving Authentication Mechanisms for Enterprise Information Systems</TD>
-         <TD class='link'><a href='https://www.novetta.com/wp-content/uploads/2015/03/NOV_Active_Authentication_Overview.pdf' class='external' target='_blank'>https://www.novetta.com/wp-content/uploads/2015/03/NOV_Active_Authentication_Overview.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>Southwest Research Institute<a name='Southwest Research Institute'></a></TD>
-         <TD class='title'>Active Authentication Using Covert Cognitive Interrogation Games</TD>
-         <TD class='link'><a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA581055' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA581055</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>Southwest Research Institute<a name='Southwest Research Institute'></a></TD>
-<TD class='title'>The Role of Covert Cognitive Games and Associated User Response Patterns in Active Authentication</TD>  <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040016-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040016-abs.html</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>SRI International<a name='SRI International'></a></TD>
-         <TD class='title'>Orientation invariant gait matching algorithm based on the Kabsch alignment</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7126347/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7126347/</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>SRI International<a name='SRI International'></a></TD>
-<TD class='title'>Recent Developments in Voice Biometrics: Robustness and High Accuracy</TD>  <TD class='link'><a href='http://www.sri.com/sites/default/files/publications/tech_homeland_security_2013_n_scheffer_paper.pdf' class='external' target='_blank'>http://www.sri.com/sites/default/files/publications/tech_homeland_security_2013_n_scheffer_paper.pdf</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>SRI International<a name='SRI International'></a></TD>
-         <TD class='title'>SRI LinguaKey Active Authentication</TD>
-         <TD class='link'><a href='http://www.smartcardalliance.org/wp-content/uploads/lawsona.pdf' class='external' target='_blank'>http://www.smartcardalliance.org/wp-content/uploads/lawsona.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Attribute-based continuous user authentication on mobile devices</TD>
-         <TD class='link'><a href='https://www.umiacs.umd.edu/~pouya/papers/attributes_auth_btas15.pdf' class='external' target='_blank'>https://www.umiacs.umd.edu/~pouya/papers/attributes_auth_btas15.pdf</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Bridging the Domain Shift by Domain Adaptive Dictionary Learning</TD>
-         <TD class='link'><a href='http://www.bmva.org/bmvc/2015/papers/paper096/' class='external' target='_blank'>http://www.bmva.org/bmvc/2015/papers/paper096/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Domain adaptive sparse representation-based classification</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7163133/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7163133/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Face-based active authentication on mobile devices</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7178258/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7178258/</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Robust multimodal recognition via multitask multivariate low-rank representations</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/document/7163146/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7163146/</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-<TD class='title'>Screen Fingerprints: a Novel Modality for Active Authentication</TD>  <TD class='link'><a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040038-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040038-abs.html</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Screen fingerprints: a novel modality for active authentication</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6559984' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6559984</a></TD>
-     </TR>
-<TR>
-  <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-<TD class='title'>Screen-based Active User Authentication</TD>  <TD class='link'><a href='http://www.sciencedirect.com/science/article/pii/S0167865514000488' class='external' target='_blank'>http://www.sciencedirect.com/science/article/pii/S0167865514000488</a></TD>
-</TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Touch gesture-based active user authentication using dictionaries</TD>
-         <TD class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7045889' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7045889</a></TD>
-     </TR>
-     <TR>
-         <TD class='team'>University of Maryland<a name='University of Maryland'></a></TD>
-         <TD class='title'>Toward a non-intrusive, physio-behavioral biometric for smartphones</TD>
-         <TD class='link'><a href='http://www.umiacs.umd.edu/~pvishalm/Conference_pub/MobileHCI2014.pdf' class='external' target='_blank'>http://www.umiacs.umd.edu/~pvishalm/Conference_pub/MobileHCI2014.pdf</a></TD>
-     </TR>
-</tbody>
-</table>
+						<TR>
+							<TD class='team'>Novetta
+								<a name='Novetta'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Improving Authentication Mechanisms for Enterprise Information Systems</TD>
+							<TD class='link'>
+								<a href='https://www.novetta.com/wp-content/uploads/2015/03/NOV_Active_Authentication_Overview.pdf' class='external'
+								 target='_blank'>https://www.novetta.com/wp-content/uploads/2015/03/NOV_Active_Authentication_Overview.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Southwest Research Institute
+								<a name='Southwest Research Institute'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Active Authentication Using Covert Cognitive Interrogation Games</TD>
+							<TD class='link'>
+								<a href='http://www.dtic.mil/get-tr-doc/pdf?AD=ADA581055' class='external' target='_blank'>http://www.dtic.mil/get-tr-doc/pdf?AD=ADA581055</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>Southwest Research Institute
+								<a name='Southwest Research Institute'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								The Role of Covert Cognitive Games and Associated User Response Patterns in Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040016-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040016-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>SRI International
+								<a name='SRI International'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Orientation invariant gait matching algorithm based on the Kabsch alignment</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7126347/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7126347/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>SRI International
+								<a name='SRI International'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Recent Developments in Voice Biometrics: Robustness and High Accuracy</TD>
+							<TD class='link'>
+								<a href='http://www.sri.com/sites/default/files/publications/tech_homeland_security_2013_n_scheffer_paper.pdf' class='external'
+								 target='_blank'>http://www.sri.com/sites/default/files/publications/tech_homeland_security_2013_n_scheffer_paper.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>SRI International
+								<a name='SRI International'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								SRI LinguaKey Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.smartcardalliance.org/wp-content/uploads/lawsona.pdf' class='external' target='_blank'>http://www.smartcardalliance.org/wp-content/uploads/lawsona.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Attribute-based continuous user authentication on mobile devices</TD>
+							<TD class='link'>
+								<a href='https://www.umiacs.umd.edu/~pouya/papers/attributes_auth_btas15.pdf' class='external' target='_blank'>https://www.umiacs.umd.edu/~pouya/papers/attributes_auth_btas15.pdf</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Bridging the Domain Shift by Domain Adaptive Dictionary Learning</TD>
+							<TD class='link'>
+								<a href='http://www.bmva.org/bmvc/2015/papers/paper096/' class='external' target='_blank'>http://www.bmva.org/bmvc/2015/papers/paper096/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Domain adaptive sparse representation-based classification</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7163133/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7163133/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Face-based active authentication on mobile devices</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7178258/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7178258/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Robust multimodal recognition via multitask multivariate low-rank representations</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/document/7163146/' class='external' target='_blank'>http://ieeexplore.ieee.org/document/7163146/</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Screen Fingerprints: a Novel Modality for Active Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.computer.org/csdl/mags/it/2013/04/mit2013040038-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/mags/it/2013/04/mit2013040038-abs.html</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Screen fingerprints: a novel modality for active authentication</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6559984' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6559984</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Screen-based Active User Authentication</TD>
+							<TD class='link'>
+								<a href='http://www.sciencedirect.com/science/article/pii/S0167865514000488' class='external' target='_blank'>http://www.sciencedirect.com/science/article/pii/S0167865514000488</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Touch gesture-based active user authentication using dictionaries</TD>
+							<TD class='link'>
+								<a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7045889' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7045889</a>
+							</TD>
+						</TR>
+						<TR>
+							<TD class='team'>University of Maryland
+								<a name='University of Maryland'></a>
+							</TD>
+							<TD class='title'>
+								<br/>
+								Toward a non-intrusive, physio-behavioral biometric for smartphones</TD>
+							<TD class='link'>
+								<a href='http://www.umiacs.umd.edu/~pvishalm/Conference_pub/MobileHCI2014.pdf' class='external' target='_blank'>http://www.umiacs.umd.edu/~pvishalm/Conference_pub/MobileHCI2014.pdf</a>
+							</TD>
+						</TR>
+					</tbody>
+				</table>
 
-</tbody>
-</table>
-<br>
-</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Search' id='search300' onkeyup='allSearch(this)' maxlength="30"/><button class='clear_button' id='clear300'>Clear</button><div id='sftwrTable'><h2>Software</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Publications</h2></div></div></div></div></div><br>
+				</tbody>
+				</table>
+				<br>
+			</div>
+		</div>
+		<div id='allSearch'>
+			<div id='tabs300'>
+				<div id='softwareSearch'>
+					<input class='search' placeholder='Search' id='search300' onkeyup='allSearch(this)' maxlength="30" />
+					<button class='clear_button' id='clear300'>Clear</button>
+					<div id='sftwrTable'>
+						<h2>Software</h2>
+					</div>
+				</div>
+				<div id='publicationsSearch'>
+					<div id='pubTable'>
+						<h2>Publications</h2>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<br>
 
-<footer>
-<div class='footer-style'>
-<hr>
-<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
-<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
-</div>
-</footer>
-</div>
+	<footer>
+		<div class='footer-style'>
+			<hr>
+			<p>
+				<a href='http://www.darpa.mil/policy/foia'>FOIA</a> |
+				<a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+				<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> |
+				<a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a>
+			</p>
+		</div>
+	</footer>
+	</div>
 </body>
+
 </html>
