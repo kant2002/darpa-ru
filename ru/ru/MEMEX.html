@@ -1,0 +1,963 @@
+﻿
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - открытый каталог</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Назад</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/memex' class='programlink'>Memex (Domain-Specific Search)</a></h2>
+<div class='left-paragraph'><p>Today's web searches use a centralized, one-size-fits-all approach that searches the Internet with the same set of tools for all queries. While that model has been wildly successful commercially, it does not work well for many government use cases. To help overcome these challenges, DARPA launched the Memex program in September 2014. Memex seeks to develop software that advances online search capabilities far beyond the current state of the art. The goal is to invent better methods for interacting with and sharing information, so users can quickly and thoroughly organize and search subsets of information relevant to their individual interests. Creation of a new domain-specific indexing and search paradigm will provide mechanisms for improved content discovery, information extraction, information retrieval, user collaboration, and extension of current search capabilities to the deep web, the dark web, and nontraditional (e.g. multimedia) content.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/mr-wade-shen' class='programmanagerlink'>Mr. Wade Shen</a></p><p>Contact: <a href='mailto:wade.shen@darpa.mil'>wade.shen@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>В таблице публикаций содержится автор(ы), заголовок и ссылки на материалы, проверенные сверками, связанные с конкретными программами DARPA.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: June 27, 2016</p></div>
+<div class='right-image'><img src="MEMEX-image.jpg"/></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Программное обеспечение</a></li><li><a href='#tabs1'>Публикации</a></li><li><a href='#tabs300'>Поиск</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Поиск' id='search0'/><button class='clear_button' id='clear0'>Очистить</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Проект</th><th>Категория</th><th>Код</th><th>Описание</th><th>Лицензия</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>InferLink</td>
+ <td width='202' class='project'><a href='https://github.com/inferlink/extraction' class='external' target='_blank'>Landmark Extractor</a></td>  <td class=category>Text Extraction</td>
+  <td class=code> <a href=https://github.com/inferlink/extraction.git class='external' target='_blank'>https://github.com/inferlink/extraction.git</a> </td>
+ <td class=description> Library to extract semi-structured data from similar web pages based on rules. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Carnegie Mellon University</td>
+ <td width='202' class='project'><a href='https://github.com/autonlab/tad' class='external' target='_blank'>TAD (Temporal Anomaly Detector)</a></td>  <td class=category>Time series statistics</td>
+  <td class=code> <a href=https://github.com/autonlab/tad.git class='external' target='_blank'>https://github.com/autonlab/tad.git</a> </td>
+ <td class=description> Temporal scan anomaly detection algorithm for time series. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MIT-LL</td>
+ <td width='202' class='project'><a href='https://github.com/mit-nlp/Text.jl' class='external' target='_blank'>Text.jl</a></td>  <td class=category>Natural Language Processing</td>
+  <td class=code> <a href=https://github.com/mit-nlp/Text.jl.git class='external' target='_blank'>https://github.com/mit-nlp/Text.jl.git</a> </td>
+ <td class=description> Text.jl provided numerous tools for text processing optimized for the Julia language. Functionality supported include algorithms for feature extraction, text classification, and language identification. (Julia) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='http://public.mtc.sri.com/MEMEX/' class='external' target='_blank'>Hidden Service Forum Spider</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=http://public.mtc.sri.com/MEMEX/forumSpider.tar.gz class='external' target='_blank'>http://public.mtc.sri.com/MEMEX/forumSpider.tar.gz</a> </td>
+ <td class=description> An interactive web forum analysis tool that operates over Tor hidden services.  This tool is capable of passive forum data capture and posting dialog at random or user-specifiable intervals. (Python) </td>
+<td class=license><span>SRI open source license</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='http://public.mtc.sri.com/MEMEX/' class='external' target='_blank'>HSProbe (The Tor Hidden Service Prober)</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=http://public.mtc.sri.com/MEMEX/hsprobe-2.1.tar.gz class='external' target='_blank'>http://public.mtc.sri.com/MEMEX/hsprobe-2.1.tar.gz</a> </td>
+ <td class=description> HSProbe is a python multi-threaded STEM-based application designed to interrogate the status of Tor hidden services (HSs) and extracting hidden service content. It is an HS-protocol savvy crawler, that uses protocol error codes to decide what to do when a hidden service is not reached.  HSProbe tests whether specified Tor hidden services (.onion addresses) are listening on one of a range of pre-specified ports, and optionally, whether they are speaking over other specified protocols.  As of this version, support for HTTP and HTTPS is implemented. Hsprobe takes as input a list of hidden services to be probed and generates as output a similar list of the results of each hidden service probed. (Python) </td>
+<td class=license><span>SRI open source license</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI International</td>
+ <td width='202' class='project'><a href='https://www.torproject.org/' class='external' target='_blank'>Tor</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://gitweb.torproject.org/tor.git/ class='external' target='_blank'>https://gitweb.torproject.org/tor.git/</a> </td>
+ <td class=description> The core software for using and participating in the Tor network. (C) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Diffeo, Inc.</td>
+ <td width='202' class='project'><a href='http://dossier-stack.readthedocs.org' class='external' target='_blank'>Dossier Stack</a></td>  <td class=category>Machine Learning</td>
+  <td class=code> <a href=https://github.com/dossier class='external' target='_blank'>https://github.com/dossier</a> </td>
+ <td class=description> Dossier Stack provides a framework of library components for building active search applications that learn what users want by capturing their actions as truth data. The frameworks web services and javascript client libraries enable  applications to efficiently capture user actions such as organizing content into folders, and allows back end algorithms to train classifiers and ranking algorithms to recommend content based on those user actions. (Python, JavaScript, Java) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Carnegie Mellon University</td>
+ <td width='202' class='project'><a href='https://github.com/mille856/CMU_memex_kickoff' class='external' target='_blank'>TJBatchExtractor</a></td>  <td class=category>Natural Language Processing</td>
+  <td class=code> <a href=https://github.com/mille856/CMU_memex.git class='external' target='_blank'>https://github.com/mille856/CMU_memex.git</a> </td>
+ <td class=description> Regex based information extractor for online advertisements (Java). </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Georgetown University <a href='#Georgetown University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://www.dumplingproject.org' class='external' target='_blank'>Dumpling</a></td>  <td class=category>Information Retrieval, Search Algorithms, Machine Learning</td>
+  <td class=code> <a href=https://github.com/jiezhou0731/Dumpling.git class='external' target='_blank'>https://github.com/jiezhou0731/Dumpling.git</a> </td>
+ <td class=description> Dumpling implements a novel dynamic search engine which refines search results on the fly. Dumpling utilizes the Winwin algorithm and the Query Change retrieval Model (QCM) to infer the user's state and tailor search results accordingly. Dumpling provides a friendly user interface for user to compare the static results and dynamic results. (Java, JavaScript, HTML, CSS) </td>
+<td class=license><span onmouseover='licenseInfo("Public Domain", "Public Domain", "http://directory.fsf.org/wiki/License:PublicDomain", "While not technically a license, this designation means the material is not copyrighted.", event)'>Public Domain</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Georgetown University <a href='#Georgetown University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/shawn67/TREC-DD-Annotation-Tool' class='external' target='_blank'>TREC-DD Annotation</a></td>  <td class=category>Search Result Evaluation</td>
+  <td class=code> <a href=https://github.com/shawn67/TREC-DD-Annotation-Tool.git class='external' target='_blank'>https://github.com/shawn67/TREC-DD-Annotation-Tool.git</a> </td>
+ <td class=description> This Annotation Tool supports the annotation task in creating ground truth data for TREC Dynamic Domain Track. It adopts drag and drop approach for assessor to annotate passage-level relevance judgement. It also supports multiple ways of browsing and search in various domains of corpora used in TREC DD. (Python, JavaScript, HTML, CSS) </td>
+<td class=license><span onmouseover='licenseInfo("Public Domain", "Public Domain", "http://directory.fsf.org/wiki/License:PublicDomain", "While not technically a license, this designation means the material is not copyrighted.", event)'>Public Domain</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Georgetown University <a href='#Georgetown University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/trec-dd/trec-dd-metrics/tree/master/cube-test/cubetest' class='external' target='_blank'>CubeTest</a></td>  <td class=category>Search Result Evaluation</td>
+  <td class=code> <a href=https://github.com/trec-dd/trec-dd-metrics.git class='external' target='_blank'>https://github.com/trec-dd/trec-dd-metrics.git</a> </td>
+ <td class=description> Official evaluation metric used for evaluation for TREC Dynamic Domain Track. It is a multiple-dimensional metric that measures the effectiveness of complete a complex and task-based search process. (Perl) </td>
+<td class=license><span onmouseover='licenseInfo("Public Domain", "Public Domain", "http://directory.fsf.org/wiki/License:PublicDomain", "While not technically a license, this designation means the material is not copyrighted.", event)'>Public Domain</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='https://github.com/TeamHG-Memex/autologin' class='external' target='_blank'>Autologin</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/TeamHG-Memex/autologin.git class='external' target='_blank'>https://github.com/TeamHG-Memex/autologin.git</a> </td>
+ <td class=description> AutoLogin is a utility that allows a web crawler to start from any given page of a website (for example the home page) and attempt to find the login page, where the spider can then log in with a set of valid, user-provided credentials to conduct a deep crawl of a site to which the user already has legitimate access. AutoLogin can be used as a library or as a service. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='https://github.com/TeamHG-Memex/Formasaurus' class='external' target='_blank'>Formasaurus</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/TeamHG-Memex/Formasaurus.git class='external' target='_blank'>https://github.com/TeamHG-Memex/Formasaurus.git</a> </td>
+ <td class=description> Formasaurus is a Python package that tells users the type of an HTML form: is it a login, search, registration, password recovery, join mailing list, contact form or something else. Under the hood it uses machine learning. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='https://github.com/TeamHG-Memex/hgprofiler' class='external' target='_blank'>HG Profiler</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/TeamHG-Memex/hgprofiler.git class='external' target='_blank'>https://github.com/TeamHG-Memex/hgprofiler.git</a> </td>
+ <td class=description> HG Profiler is a tool that allows users to take a list of entities from a particular source and look for those same entities across a pre-defined list of other sources. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='https://github.com/TeamHG-Memex/memex-pinterest' class='external' target='_blank'>SourcePin</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/TeamHG-Memex/memex-pinterest.git class='external' target='_blank'>https://github.com/TeamHG-Memex/memex-pinterest.git</a> </td>
+ <td class=description> SourcePin is a tool to assist users in discovering websites that contain content they are interested in for a particular topic, or domain. Unlike a search engine, SourcePin allows a non-technical user to leverage the power of an advanced automated smart web crawling system to generate significantly more results than the manual process typically does, in significantly less time. The User Interface of SourcePin allows users to quickly across through hundreds or thousands of representative images to quickly find the websites they are most interested in. SourcePin also has a scoring system which takes feedback from the user on which websites are interesting and, using machine learning, assigns a score to the other crawl results based on how interesting they are likely to be for the user.  The roadmap for SourcePin includes integration with other tools and a capability for users to actually extract relevant information from the crawl results. (Python, JavaScript) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='http://frontera.readthedocs.org/en/latest/' class='external' target='_blank'>Frontera</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/scrapinghub/frontera.git class='external' target='_blank'>https://github.com/scrapinghub/frontera.git</a> </td>
+ <td class=description> Frontera (formerly Crawl Frontier) is used as part of a web crawler, it can store URLs and prioritize what to visit next. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='http://distributed-frontera.readthedocs.org/en/latest/' class='external' target='_blank'>Distributed Frontera</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/scrapinghub/distributed-frontera.git class='external' target='_blank'>https://github.com/scrapinghub/distributed-frontera.git</a> </td>
+ <td class=description> Distributed Frontera is an extension to Frontera (https://github.com/scrapinghub/frontera), providing replication, sharding, and isolation of all parts of Frontera-based crawler to scale and distribute it. Frontera (also in the DARPA Open Catalog) is a crawl frontier framework, the part of a crawling system that decides the logic and policies to follow when a crawler is visiting websites (what pages should be crawled next, priorities and ordering, how often pages are revisited, etc.). (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='https://github.com/TeamHG-Memex/arachnado' class='external' target='_blank'>Arachnado</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/TeamHG-Memex/arachnado.git class='external' target='_blank'>https://github.com/TeamHG-Memex/arachnado.git</a> </td>
+ <td class=description> Arachnado is a simple management interface for launching a deep crawl of a specific website. It provides a Tornado-based HTTP API and a web UI for a Scrapy-based crawler. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='http://splash.readthedocs.org/en/latest/' class='external' target='_blank'>Splash</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/scrapinghub/splash.git class='external' target='_blank'>https://github.com/scrapinghub/splash.git</a> </td>
+ <td class=description> Lightweight, scriptable browser as a service with an HTTP API. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Hyperion Gray, LLC, Scrapinghub</td>
+ <td width='202' class='project'><a href='https://github.com/TeamHG-Memex/scrapy-dockerhub' class='external' target='_blank'>Scrapy-Dockerhub</a></td>  <td class=category>Data Collection</td>
+  <td class=code> <a href=https://github.com/TeamHG-Memex/scrapy-dockerhub.git class='external' target='_blank'>https://github.com/TeamHG-Memex/scrapy-dockerhub.git</a> </td>
+ <td class=description> Scrapy-Dockerhub is a deployment setup for Scrapy spiders that packages the spider and all dependencies into a Docker container, which is then managed by a Fabric command line utility. With this setup, users can run spiders seamlessly on any server, without the need for Scrapyd which typically handles the spider management. With Scrapy-Dockerhub, users issue one command to deploy spider with all dependencies to the server and second command to run it. There are also commands for viewing jobs, logs, etc. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Southern California Information Sciences Institute</td>
+ <td width='202' class='project'><a href='http://www.isi.edu/integration/karma/' class='external' target='_blank'>Karma</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://github.com/usc-isi-i2/Web-Karma.git class='external' target='_blank'>https://github.com/usc-isi-i2/Web-Karma.git</a> </td>
+ <td class=description> Karma is an information integration tool that enables users to quickly and easily integrate data from a variety of data sources including databases, spreadsheets, delimited text files, XML, JSON, KML and Web APIs. Users integrate information by modelling it according to an ontology of their choice using a graphical user interface that automates much of the process. (Java, JavaScript) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Southern California Information Sciences Institute, Next Century Corporation</td>
+ <td width='202' class='project'><a href='https://github.com/NextCenturyCorporation/dig' class='external' target='_blank'>DIG</a></td>  <td class=category>Visualization</td>
+  <td class=code> <a href=https://github.com/NextCenturyCorporation/dig.git class='external' target='_blank'>https://github.com/NextCenturyCorporation/dig.git</a> </td>
+ <td class=description> DIG is a visual analysis tool based on a faceted search engine that enables rapid, interactive exploration of large data sets.  Users refine their  queries by entering search terms or selecting values from lists of aggregated attributes.  DIG can be quickly configured for a new domain through simple configuration.  (JavaScript) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>IST Research, Parse.ly</td>
+ <td width='202' class='project'><a href='https://github.com/Parsely/streamparse' class='external' target='_blank'>streamparse</a></td>  <td class=category>Analytics, Distributed Programming, Infrastructure, Systems Integration</td>
+  <td class=code> <a href=https://github.com/Parsely/streamparse.git class='external' target='_blank'>https://github.com/Parsely/streamparse.git</a> </td>
+ <td class=description> streamparse runs Python code against real-time streams of data. It allows users to spin up small clusters of stream processing machines locally during development. It also allows remote management of stream processing clusters that are running Apache Storm. It includes a Python module implementing the Storm multi-lang protocol; a command-line tool for managing local development, projects, and clusters; and an API for writing data processing topologies easily. (Python, Clojure) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>IST Research, Parse.ly</td>
+ <td width='202' class='project'><a href='https://github.com/Parsely/pykafka' class='external' target='_blank'>pykafka</a></td>  <td class=category>Analytics, Distributed Programming, Infrastructure, Systems Integration</td>
+  <td class=code> <a href=https://github.com/Parsely/pykafka.git class='external' target='_blank'>https://github.com/Parsely/pykafka.git</a> </td>
+ <td class=description> pykafka is a Python driver for the Apache Kafka messaging system. It enables Python programmers to publish data to Kafka topics and subscribe to existing Kafka topics. It includes a pure-Python implementation as well as an optional C driver for increased performance. It is the only Python driver to have feature parity with the official Scala driver, supporting both high-level and low-level APIs, including balanced consumer groups for high-scale uses. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a>, Continuum, Kitware</td>
+ <td width='202' class='project'><a href='https://github.com/memex-explorer/image_space' class='external' target='_blank'>ImageSpace</a></td>  <td class=category>Analysis, Visualization</td>
+  <td class=code> <a href=https://github.com/memex-explorer/image_space.git class='external' target='_blank'>https://github.com/memex-explorer/image_space.git</a> </td>
+ <td class=description> ImageSpace provides the ability to analyze and search through large numbers of images. These images may be text searched based on associated metadata and OCR text or a new image may be uploaded as a foundation for a search. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a>, Continuum</td>
+ <td width='202' class='project'><a href='https://github.com/pymonger/facetview-memex' class='external' target='_blank'>FacetSpace</a></td>  <td class=category>Analysis</td>
+  <td class=code> <a href=https://github.com/pymonger/facetview-memex.git class='external' target='_blank'>https://github.com/pymonger/facetview-memex.git</a> </td>
+ <td class=description> FacetSpace allows the investigation of large data sets based on the extraction and manipulation of relevant facets. These facets may be almost any consistent piece of information that can be extracted from the dataset: names, locations, prices, etc. (JavaScript) </td>
+<td class=license><span></span> </td>
+ </tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/chrismattmann/imagecat' class='external' target='_blank'>ImageCat</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://github.com/chrismattmann/imagecat.git class='external' target='_blank'>https://github.com/chrismattmann/imagecat.git</a> </td>
+ <td class=description> ImageCat analyses images and extracts their EXIF metadata and any text contained in the image via OCR. It can handle millions of images. (Python, Java) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a>, Continuum</td>
+ <td width='202' class='project'><a href='https://github.com/memex-explorer/memex-gate' class='external' target='_blank'>MemexGATE</a></td>  <td class=category>Text Analysis, Text Engineering, Indexing</td>
+  <td class=code> <a href=https://github.com/memex-explorer/memex-gate.git class='external' target='_blank'>https://github.com/memex-explorer/memex-gate.git</a> </td>
+ <td class=description> Server side framework, command line tool and environment for running large scale General Architecture Text Engineering tasks over document resources such as online ads, debarment information, federal and district court appeals, press releases, news articles, social media streams, etc. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a>, Kitware</td>
+ <td width='202' class='project'><a href='https://github.com/kitware/smqtk' class='external' target='_blank'>SMQTK</a></td>  <td class=category>Analysis</td>
+  <td class=code> <a href=https://github.com/Kitware/SMQTK.git class='external' target='_blank'>https://github.com/Kitware/SMQTK.git</a> </td>
+ <td class=description> Kitware's Social Multimedia Query Toolkit (SMQTK) is an open-source service for ingesting images and video from social media (e.g. YouTube, Twitter), computing content-based features, indexing the media based on the content descriptors, querying for similar content, and building user-defined searches via an interactive query refinement (IQR) process. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>U.S. Naval Research Laboratory <a href='#U.S. Naval Research Laboratory' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://torps.github.io/' class='external' target='_blank'>The Tor Path Simulator (TorPS)</a></td>  <td class=category>Experimentation Support, Security</td>
+  <td class=code> <a href=https://github.com/torps/torps.git class='external' target='_blank'>https://github.com/torps/torps.git</a> </td>
+ <td class=description> TorPS quickly simulates path selection in the Tor traffic-secure communications network. It is useful for experimental analysis of alternative route selection algorithms or changes to route selection parameters. (C++, Python, Bash) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>U.S. Naval Research Laboratory <a href='#U.S. Naval Research Laboratory' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://shadow.github.io/' class='external' target='_blank'>Shadow</a></td>  <td class=category>Experimentation Support, Security</td>
+  <td class=code> <a href=https://github.com/shadow/shadow.git class='external' target='_blank'>https://github.com/shadow/shadow.git</a> </td>
+ <td class=description> Shadow is an open-source network simulator/emulator hybrid that runs real applications like Tor and Bitcoin over a simulated Internet topology. It is light-weight, efficient, scalable, parallelized, controllable, deterministic, accurate, and modular. (C) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>NYU <a href='#NYU' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/ViDA-NYU/ache' class='external' target='_blank'>ACHE</a></td>  <td class=category>Data Collection, Information Retrieval</td>
+  <td class=code> <a href=https://github.com/ViDA-NYU/ache.git class='external' target='_blank'>https://github.com/ViDA-NYU/ache.git</a> </td>
+ <td class=description> ACHE is a focused crawler. Users can customize the crawler to search for different topics or objects on the Web. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>NYU <a href='#NYU' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/ViDA-NYU/domain_discovery_tool.git' class='external' target='_blank'>ACHE - DDT</a></td>  <td class=category>Data Collection, Information Retrieval</td>
+  <td class=code> <a href=https://github.com/ViDA-NYU/domain_discovery_tool.git class='external' target='_blank'>https://github.com/ViDA-NYU/domain_discovery_tool.git</a> </td>
+ <td class=description> DDT is an interactive system that helps users explore and better understand a domain (or topic) as it is represented on the Web. It achieves this by integrating human insights with machine computation (data mining and machine learning) through visualization. DDT allows a domain expert to visualize and analyze pages returned by a search engine or a crawler, and easily provide feedback about relevance. This feedback, in turn, can be used to address two challenges: (1) Guide users in the process of domain understanding and help them construct effective queries to be issued to a search engine; and (2) Configure focused crawlers that efficiently search the Web for additional pages on the topic. DDT allows users to quickly select crawling seeds as well as positive and negatives required to create a page classifier for the focus topic. (Python, Java, JavaScript) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a>, NYU <a href='#NYU' onclick='pubSearch(this)'>(publications)</a>, Continuum Analytics</td>
+ <td width='202' class='project'><a href='https://github.com/ContinuumIO/memex-explorer' class='external' target='_blank'>Memex Explorer</a></td>  <td class=category>Analytics, Visualization, research integration, interface</td>
+  <td class=code> <a href=https://github.com/memex-explorer/memex-explorer.git class='external' target='_blank'>https://github.com/memex-explorer/memex-explorer.git</a> </td>
+ <td class=description> Memex Explorer is a pluggable framework for domain specific crawls, search, and unified interface for Memex Tools. It includes the capability to add links to other web-based apps (not just Memex) and the capability to start, stop, and analyze web crawls using 2 different crawlers - ACHE and Nutch. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>NYU <a href='#NYU' onclick='pubSearch(this)'>(publications)</a>, Continuum Analytics, Jet Propulsion Laboratory <a href='#Jet Propulsion Laboratory' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/ContinuumIO/topic_space' class='external' target='_blank'>Topic Space</a></td>  <td class=category>Analytics, Visualization</td>
+  <td class=code> <a href=https://github.com/memex-explorer/topic_space.git class='external' target='_blank'>https://github.com/memex-explorer/topic_space.git</a> </td>
+ <td class=description> Tool for visualization for topics in document collections. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ASL", "Apache Software License", "https://www.apache.org/licenses/", "A whole class of free software licenses, with versions available for individual constraints.", event)'>ASL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Uncharted Software</td>
+ <td width='202' class='project'><a href='http://www.tellfinder.com/' class='external' target='_blank'>TellFinder</a></td>  <td class=category>Visualization, Analytics, Information Retrieval</td>
+  <td class=code> <a href=https://github.com/unchartedsoftware/TellFinder.git class='external' target='_blank'>https://github.com/unchartedsoftware/TellFinder.git</a> </td>
+ <td class=description> TellFinder provides efficient visual analytics to automatically characterize and organize publicly available Internet data. Compared to standard web search engines, TellFinder enables users to research case-related data in significantly less time. Reviewing TellFinder's automatically characterized groups also allows users to understand temporal patterns, relationships and aggregate behavior. The techniques are applicable to various domains. (JavaScript, Java) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ArrayFire</td>
+ <td width='202' class='project'><a href='http://arrayfire.com' class='external' target='_blank'>ArrayFire</a></td>  <td class=category>Analytics, API, Distributed Programming, Image Processing, Machine Learning, Signal Processing, Visualization</td>
+  <td class=code> <a href=https://github.com/arrayfire/arrayfire.git class='external' target='_blank'>https://github.com/arrayfire/arrayfire.git</a> </td>
+ <td class=description> ArrayFire is a high performance software library for parallel computing with an easy-to-use API. Its array-based function set makes parallel programming simple. ArrayFire's multiple backends (CUDA, OpenCL, and native CPU) make it platform independent and highly portable. A few lines of code in ArrayFire can replace dozens of lines of parallel computing code, saving users valuable time and lowering development costs. (C, C++, Python, Fortran, Java) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Stanford University</td>
+ <td width='202' class='project'><a href='http://deepdive.stanford.edu/' class='external' target='_blank'>DeepDive</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://github.com/HazyResearch/deepdive.git class='external' target='_blank'>https://github.com/HazyResearch/deepdive.git</a> </td>
+ <td class=description> DeepDive is a new type of knowledge base construction system that enables developers to analyze data on a deeper level than ever before. Many applications have been built using DeepDive to extract data from millions of documents, Web pages, PDFs, tables, and figures. DeepDive is a trained system, which means that it uses machine-learning techniques to incorporate domain-specific knowledge and user feedback to improve the quality of its analysis. DeepDive can deal with noisy and imprecise data by producing calibrated probabilities for every assertion it makes. DeepDive offers a scalable, high-performance learning engine. (SQL, Python, C++) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Qadium</td>
+ <td width='202' class='project'><a href='https://github.com/qadium/plumber' class='external' target='_blank'>Plumber</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://github.com/qadium/plumber.git class='external' target='_blank'>https://github.com/qadium/plumber.git</a> </td>
+ <td class=description> Plumber is designed to facilitate distributed data exploration. With the "plumb" command line tool, developers and data scientists can deploy and manage data enhancers on a Kubernetes cluster. Plumber provides a system to write python scripts to perform data enhancement e.g. perform a regex, make a call to a database, link data together, etc. and automatically distribute python scripts to optimize performance. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Qadium</td>
+ <td width='202' class='project'><a href='https://pypi.python.org/pypi/CommonCrawlJob' class='external' target='_blank'>CommonCrawlJob</a></td>  <td class=category>Analysis</td>
+  <td class=code> <a href=https://github.com/qadium-memex/CommonCrawlJob class='external' target='_blank'>https://github.com/qadium-memex/CommonCrawlJob</a> </td>
+ <td class=description> Extract regular expressions from Common Crawl. This is a useful library for collecting unique identfifiers at Internet scale without any crawling and using only Python and AWS (Python, AWS) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Qadium</td>
+ <td width='202' class='project'><a href='https://github.com/qadium/link-ht' class='external' target='_blank'>Link</a></td>  <td class=category>Visualization, Analytics, Information Retrieval</td>
+  <td class=code> <a href=https://github.com/qadium/link-ht.git class='external' target='_blank'>https://github.com/qadium/link-ht.git</a> </td>
+ <td class=description> Link is a domain-specific, entity-centric search tool designed for analysts. Link is a front-end web app that sits on top of data enhanced by Plumber and provides a framework that must be tailored on a per domain basis. (javascript) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Qadium</td>
+ <td width='202' class='project'><a href='https://github.com/qadium/omakase' class='external' target='_blank'>Omakase</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://github.com/qadium/omakase.git class='external' target='_blank'>https://github.com/qadium/omakase.git</a> </td>
+ <td class=description> Omakase provides a simple and flexible interface to share data, computations, and visualizations between a variety of user roles in both local and cloud environments. (Python, Clojure) </td>
+<td class=license><span onmouseover='licenseInfo("EPL", "Eclipse Public License", "http://www.eclipse.org/legal/epl-v10.html", "This free software license removes broader patent retaliation language in the Common Public License, but remains incompatible with the GNU GPL.", event)'>EPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Qadium</td>
+ <td width='202' class='project'><a href='https://github.com/qadium/credstmpl' class='external' target='_blank'>credstmpl</a></td>  <td class=category>Infrastructure</td>
+  <td class=code> <a href=https://github.com/qadium/credstmpl.git class='external' target='_blank'>https://github.com/qadium/credstmpl.git</a> </td>
+ <td class=description> Command-line tool to instantiate templates from credentials stored in CredStash. credstmpl makes it easy to share secret credentials across a large team. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Qadium</td>
+ <td width='202' class='project'><a href='https://github.com/qadium-memex/linkalytics' class='external' target='_blank'>linkalytics</a></td>  <td class=category>Analytics</td>
+  <td class=code> <a href=https://github.com/qadium-memex/linkalytics.git class='external' target='_blank'>https://github.com/qadium-memex/linkalytics.git</a> </td>
+ <td class=description> Linkalytics is a suite of back-end analytics to link together disparate data. Linkalytics is intended to be hosted as an API that users can use to enhance, group, and cluster data. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Sotera Defense Solutions</td>
+ <td width='202' class='project'><a href='https://github.com/Sotera/DatawakeDepot' class='external' target='_blank'>DataWake</a></td>  <td class=category>Analytics, Distributed Programming, Data Collection</td>
+  <td class=code> <a href=https://github.com/Sotera/DatawakeDepot.git class='external' target='_blank'>https://github.com/Sotera/DatawakeDepot.git</a> </td>
+ <td class=description> The Datawake project aggregates user browsing data via a plug-in using domain-specific searches. This captured, or extracted, data is organized into browse paths and elements of interest. This information can be shared or expanded amongst teams of individuals. Elements of interest which are extracted either automatically, or manually by the user, are given weighted values. The exported data can be used to specify a new domain and seed crawlers.(Python, Java, Scala, Clojure, JavaScript) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Uncharted Software</td>
+ <td width='202' class='project'><a href='http://www.oculusinfo.com/tiles' class='external' target='_blank'>Aperture Tile-Based Visual Analytics</a></td>  <td class=category>Visualization</td>
+  <td class=code> <a href=https://github.com/oculusinfo/aperture-tiles.git class='external' target='_blank'>https://github.com/oculusinfo/aperture-tiles.git</a> </td>
+ <td class=description> New tools for raw data characterization of 'big data' are required to suggest initial hypotheses for testing. The widespread use and adoption of web-based maps has provided a familiar set of interactions for exploring abstract large data spaces. Building on these techniques, we developed tile based visual analytics that provide browser-based interactive visualization of billions of data points. (JavaScript/Java) </td>
+<td class=license><span onmouseover='licenseInfo("MIT", "MIT License", "http://en.wikipedia.org/wiki/MIT_License", "The MIT license allows for permissive, free distribution of software and is compatible with GNU GPL.", event)'>MIT</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MIT-LL</td>
+ <td width='202' class='project'><a href='https://github.com/mit-nlp/MITIE' class='external' target='_blank'>MITIE</a></td>  <td class=category>Analytics</td>
+  <td class=code> <a href=https://github.com/mit-nlp/MITIE.git class='external' target='_blank'>https://github.com/mit-nlp/MITIE.git</a> </td>
+ <td class=description> Trainable named entity extractor (NER) and relation extractor. (C) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MIT-LL</td>
+ <td width='202' class='project'><a href='https://github.com/mitll/topic-clustering' class='external' target='_blank'>Topic</a></td>  <td class=category>Analytics</td>
+  <td class=code> <a href=https://github.com/mitll/topic-clustering.git class='external' target='_blank'>https://github.com/mitll/topic-clustering.git</a> </td>
+ <td class=description> This tool takes a set of text documents, filters by a given language, and then produces documents clustered by topic. The method used is Probabilistic Latent Semantic Analysis (PLSA). (Python) </td>
+<td class=license><span onmouseover='licenseInfo("ALv2", "Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0", "This free software license includes certain patent termination and indemnification provisions, compatible with GPL3.", event)'>ALv2</span> </td>
+ </tr>
+<tr>
+  <td class='team'>IST Research</td>
+ <td width='202' class='project'><a href='https://github.com/istresearch/scrapy-cluster' class='external' target='_blank'>Scrapy Cluster</a></td>  <td class=category>Information Collection, Distributed Environments</td>
+  <td class=code> <a href=https://github.com/istresearch/scrapy-cluster.git class='external' target='_blank'>https://github.com/istresearch/scrapy-cluster.git</a> </td>
+ <td class=description> Scrapy Cluster is a scalable, distributed web crawling cluster based on Scrapy and coordinated via Kafka and Redis. It provides a framework for intelligent distributed throttling as well as the ability to conduct time-limited web crawls. (Python) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Columbia Univeristy</td>
+ <td width='202' class='project'><a href='https://github.com/ColumbiaDVMM/ColumbiaImageSearch' class='external' target='_blank'>ColumbiaImageSearch</a></td>  <td class=category>Analytics, Classification, Hashing, Image search</td>
+  <td class=code> <a href=https://github.com/ColumbiaDVMM/ColumbiaImageSearch.git class='external' target='_blank'>https://github.com/ColumbiaDVMM/ColumbiaImageSearch.git</a> </td>
+ <td class=description> ColumbiaImageSearch provides highly efficient solutions for finding images of similar content from large collections in real time. It combines a unique image representation, call DeepSentiBank, and novel hashing techniques to encode each image with a very compact hash code, which can reduce the computational and storage costs by orders of magnitude and allows searching over millions of images in real time. The search tool API is exposed as a php file, and input/output processing is performed inside a python script, while the actual image search is done in C++ for efficiency. (Python, C++, PHP, CSS, Javascript) </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Поиск' id='search1'/><button class='clear_button' id='clear1'>Очистить</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Designing States, Actions, and Rewards for Using POMDP in Session Search</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/ecir2015-full.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/ecir2015-full.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Detecting the Eureka Effect in Complex Search</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/ecir2015-short.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/ecir2015-short.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Is the First Query the Most Important: An Evaluation of Query Aggregation Schemes in Web Search Sessions</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/sig-aggregation.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/sig-aggregation.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>A Fragment-Based Similarity Measure for Concept Hierarchies and Ontologies</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/cikm15-esair.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/cikm15-esair.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Query Aggregation in Session Search</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/dubmod08s-yang.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/dubmod08s-yang.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Modeling Rich Interactions in Session Search - Georgetown University at TREC 2014 Session Track</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/presentation.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/presentation.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Dynamic Information Retrieval Modeling</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/tut09e-yang.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/tut09e-yang.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Browsing Hierarchy Construction by Minimum Evolution</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/tois2013.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/tois2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>The Query-Change Model: Modeling Session Search as a Markov Decision Process</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>A Term-Based Methodology for Query Reformulation Understanding</td>  <td class='link'><a href='http://infosense.cs.georgetown.edu/publication/IRJ2015.pdf' class='external' target='_blank'>http://infosense.cs.georgetown.edu/publication/IRJ2015.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>U.S. Naval Research Laboratory<a name='U.S. Naval Research Laboratory'></a></td>
+<td class='title'>Genuine Onion: Simple, Fast, Flexible, and Cheap Website Authentication</td>  <td class='link'><a href='http://www.nrl.navy.mil/itd/chacs/syverson-genuine-onion-simple-fast-flexible-and-cheap-website-authentication' class='external' target='_blank'>http://www.nrl.navy.mil/itd/chacs/syverson-genuine-onion-simple-fast-flexible-and-cheap-website-authentication</a></td>
+</tr>
+<tr>
+  <td class='team'>NYU<a name='NYU'></a></td>
+<td class='title'>Bootstrapping Focused Crawlers in Sparse Topics</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory<a name='Jet Propulsion Laboratory'></a>, Georgetown University<a name='Georgetown University'></a></td>
+<td class='title'>Multimedia Metadata-based Forensics in Human Trafficking Web Data</td>  <td class='link'><a href='http://media1.sexi2016.org/2016/02/sexi16proceedings.pdf' class='external' target='_blank'>http://media1.sexi2016.org/2016/02/sexi16proceedings.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory<a name='Jet Propulsion Laboratory'></a></td>
+<td class='title'>Clustering Web Pages Based on Structure and Style Similarity</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Jet Propulsion Laboratory<a name='Jet Propulsion Laboratory'></a></td>
+<td class='title'>A New Application of the Cosine Similarity Metric for Scalable Domain Discovery</td>  <td class='link'>Not Yet Published</td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Поиск' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Очистить</button><div id='sftwrTable'><h2>Программное обеспечение</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Публикации</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
