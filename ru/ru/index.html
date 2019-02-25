@@ -1,538 +1,26 @@
-﻿
-<!DOCTYPE html>
-<html lang='ru'>
-<head>
-    <meta charset="utf-8">
-    <title>DARPA - открытый каталог</title>
-    <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
-    <link rel='stylesheet' href='css/style_v2.css' type='text/css' />
-    <link rel='stylesheet' href='css/banner_style.css' type='text/css' />
-    <link rel='stylesheet' href='css/header_footer.css' type='text/css' />
-    <link rel='stylesheet' href='css/list_style.css' type='text/css' />
-    <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css' />
-    <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
-    <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
-    <script language="javascript" type='text/javascript' src="jstorage.js"></script>
-    <script language="javascript" type='text/javascript' src="utils.js"></script>
-    <script language="javascript" type='text/javascript' src="spin.js"></script>
-    <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
-    <script language="javascript" type='text/javascript' src="list.min.js"></script>
-    <!--
-     <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
-     <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
-     <script language="javascript" type='text/javascript' src="tooltip.js"></script>
-     <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
-     <script language="javascript" type='text/javascript' src="legend.js"></script>
-     <script language="javascript" type='text/javascript' src="axis.js"></script>
-     <script language="javascript" type='text/javascript' src="distribution.js"></script>
-    -->
-</head>
-<body>
-
-    <script type='text/javascript'>
-        var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
-
-        $(document).ready(function () {
-
-            $('#header_button').click(function () {
-                $.jStorage.set("searchTerm", $('#header_search').val());
-                window.location = 'catalog_search.html';
-            });
-
-            $("#header_search").keyup(function (event) {
-                if (event.keyCode == 13)
-                    $('#header_button').click();
-            });
-
-            $('#sftwr').tablesorter({
-                // sort on the first column and second column, order asc
-                sortList: [[0, 0], [1, 0]]
-            });
-            $('#pubs').tablesorter({
-                sortList: [[0, 0], [1, 0]]
-            });
-            $('#data').tablesorter({
-                sortList: [[0, 0], [1, 0]]
-            });
-            $('#examples').tablesorter({
-                sortList: [[0, 0], [1, 0]]
-            });
-            $('#splash').tablesorter({
-                // sort on the first column, order asc
-                sortList: [[0, 0]]
-            });
-
-            //get the list of tabs and the number of tabs
-            var tabList = $('#tabs >ul >li');
-            var tabCount = $('#tabs >ul >li').size();
-
-            //create table tabs
-            $(function () {
-                $("#tabs").tabs
-                var param_tab = decodeURIComponent(getUrlParams("tab"));
-                var param_term = decodeURIComponent(getUrlParams("term"));
-
-                if (param_tab && !param_term) {
-                    //console.log("tab");
-                    if (param_tab == "tabs0")
-                        $("#tabs").tabs({ active: 0 });  //software tab
-                    else if (param_tab == "tabs1")
-                        $("#tabs").tabs({ active: 1 });  //publications tab
-                    else if (param_tab == "tabs2")
-                        $("#tabs").tabs({ active: 2 });  //data tab
-                    else if (param_tab == "tabs3")
-                        $("#tabs").tabs({ active: 3 });  //examples tab
-                }
-                else if (param_tab && param_term) {
-                    //console.log("tab and term");
-                    if (param_tab == "tabs0")
-                        swSearch(param_term);
-                    else if (param_tab == "tabs1")
-                        pubSearch(param_term);
-                    else if (param_tab == "tabs2")
-                        dataSearch(param_term);
-                    else if (param_tab == "tabs3")
-                        exSearch(param_term);
-                }
-                else {
-                    //console.log("no params");
-                    if ($("#tabs0"))
-                        $("#tabs").tabs({ active: 0 }); //software tab
-                    else if ($("#tabs1"))
-                        $("#tabs").tabs({ active: 1 }); //publications tab
-                    else if ($("#tabs2"))
-                        $("#tabs").tabs({ active: 2 }); //data tab
-                    else
-                        $("#tabs").tabs({ active: 3 }); //examples tab
-                }
-
-            });
-
-            //configure table search and clear button for software, publications, and data table
-            for (var i = 0; i < tabCount; i++) {
-
-                var tabName = tabList[i].textContent.toLowerCase(); //name of tab
-
-                if (tabName == "software") {
-                    var tabTable = $('#tabs0 table'); //table within this tab
-                    var tabHeaders = getTableHeaders(tabTable);
-
-                    var sw_options = {
-                        valueNames: tabHeaders
-                    };
-
-                    swList = new List(tabName, sw_options);
-
-                    $("#clear0").click(function () {
-                        var currId = this.id.match(/\d+/g);
-                        $("#search" + currId[0]).val("");
-                        swList.search();
-                    });
-                }
-
-                if (tabName == "publications") {
-                    var tabTable = $('#tabs1 table'); //table within this tab
-                    var tabHeaders = getTableHeaders(tabTable);
-
-                    var pub_options = {
-                        valueNames: tabHeaders
-                    };
-
-                    pubList = new List(tabName, pub_options);
-
-                    $("#clear1").click(function () {
-                        var currId = this.id.match(/\d+/g);
-                        $("#search" + currId[0]).val("");
-                        pubList.search();
-                    });
-
-                }
-
-                if (tabName == "data") {
-                    var tabTable = $('#tabs2 table'); //table within this tab
-                    var tabHeaders = getTableHeaders(tabTable);
-
-                    var data_options = {
-                        valueNames: tabHeaders
-                    };
-
-                    dataList = new List(tabName, data_options);
-
-                    $("#clear2").click(function () {
-                        var currId = this.id.match(/\d+/g);
-                        $("#search" + currId[0]).val("");
-                        dataList.search();
-                    });
-
-                }
-
-                if (tabName == "examples") {
-                    var tabTable = $('#tabs3 table'); //table within this tab
-                    var tabHeaders = getTableHeaders(tabTable);
-
-                    var examples_options = {
-                        valueNames: tabHeaders
-                    };
-
-                    exList = new List(tabName, examples_options);
-
-                    $("#clear3").click(function () {
-                        var currId = this.id.match(/\d+/g);
-                        $("#search" + currId[0]).val("");
-                        exList.search();
-                    });
-
-                }
-
-                if (tabName == "search") {
-
-                    var table_clone = $('#tabs table').clone();
-                    for (var k = 0; k < table_clone.length; k++) {
-                        var searchHeaders = getTableHeaders(table_clone[k]);
-                        var search_options = {
-                            valueNames: searchHeaders
-                        };
-
-                        if (table_clone[k].id == "sftwr") {
-                            $("#softwareSearch #sftwrTable").append(table_clone[k]);
-                            //tables are hidden initially
-                            $("#softwareSearch #sftwrTable").hide();
-                            ssftList = new List("softwareSearch", search_options);
-                        }
-                        else if (table_clone[k].id == "pubs") {
-
-                            $("#publicationsSearch #pubTable").append(table_clone[k]);
-                            $("#publicationsSearch #pubTable").hide();
-                            spubList = new List("publicationsSearch", search_options);
-                        }
-                        else if (table_clone[k].id == "examples") {
-
-                            $("#examplesSearch #examplesTable").append(table_clone[k]);
-                            $("#examplesSearch #examplesTable").hide();
-                            sxampleList = new List("examplesSearch", search_options);
-                        }
-                        else {
-                            $("#dataSearch #dataTable").append(table_clone[k]);
-                            $("#dataSearch #dataTable").hide();
-                            sdtList = new List("dataSearch", search_options);
-                        }
-
-
-                    }
-
-                    $("#clear300").click(function () {
-                        var currId = this.id.match(/\d+/g);
-                        $("#search" + currId[0]).val("");
-                        if (ssftList != "")
-                            ssftList.search();
-                        if (spubList != "")
-                            spubList.search();
-                        if (sdtList != "")
-                            sdtList.search();
-                        if (sxampleList != "")
-                            sxampleList.search()
-                        //when search is cleared tables need to be hidden
-                        $("#softwareSearch #sftwrTable").hide();
-                        $("#publicationsSearch #pubTable").hide();
-                        $("#dataSearch #dataTable").hide();
-                        $("#examplesSearch #examplesTable").hide();
-
-                    });
-
-                }
-            }
-
-            var leaving_timeout;
-
-            //set the click action for the back button on the leaving window.
-            $('#back').click(function () {
-                cancelLeaving(); //cancel leaving, user clicks 'back'
-            });
-
-            //for any links with the 'external' class, set the click event
-            console.log($('a.external'));
-            $('a.external').click(function (ev) {
-                console.log("link clicked");
-                //prevent the default action of the event, this will stop the href in the anchor being followed
-                //before the animation has started, u can also use return false;
-                ev.preventDefault();
-                //stop any actions if a new link is clicked.
-                cancelLeaving();
-                //store a reference to the anchor tag
-                var $self = $(this);
-                showLeavingMessage($self);
-
-                leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
-            });
-
-
-            function leave(leavingLink) {
-                //open an external link
-                window.open(leavingLink.attr('href'));
-                cancelLeaving(); //cancel leaving, user has left.
-            }
-
-            function showLeavingMessage(leavingLink) {
-                //show the leaving message
-                $('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
-                //$("body").css("background-color", "grey");
-                $('#overlay').show();
-
-            }
-
-            function cancelLeaving() {
-                //cancel leaving.  hide the leaving box
-                clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
-                $('#overlay').hide();
-            }
-
-
-
-        }
-        );
-
-        function jump(h) {
-            var url = location.href;
-            location.href = "#" + h;
-            history.replaceState(null, null, url)
-        }
-
-        function swSearch(link) {
-            var search_text = "";
-            if (link.hash)
-                search_text = link.hash.replace("#", "");
-            else
-                search_text = link;
-            $('#tabs').tabs({ active: 0 }); //publications tab
-            var search_box = $("#search0");
-            search_box.val(search_text);
-
-            setTimeout(function () {
-                $('html, body').animate({
-                    scrollTop: $("#tabs").offset().top
-                }, 0);
-                search_box.focus();
-                search_box.select();
-                swList.search(search_text);
-
-            }, 300);
-        }
-
-        function pubSearch(link) {
-            var search_text = "";
-            if (link.hash)
-                search_text = link.hash.replace("#", "");
-            else
-                search_text = link;
-            $('#tabs').tabs({ active: 1 }); //publications tab
-            var search_box = $("#search1");
-            search_box.val(search_text);
-
-            setTimeout(function () {
-                $('html, body').animate({
-                    scrollTop: $("#tabs").offset().top
-                }, 0);
-                search_box.focus();
-                search_box.select();
-                pubList.search(search_text);
-            }, 300);
-        }
-
-        function dataSearch(link) {
-            var search_text = "";
-            if (link.hash)
-                search_text = link.hash.replace("#", "");
-            else
-                search_text = link;
-            $('#tabs').tabs({ active: 2 }); //publications tab
-            var search_box = $("#search2");
-            search_box.val(search_text);
-
-            setTimeout(function () {
-                $('html, body').animate({
-                    scrollTop: $("#tabs").offset().top
-                }, 0);
-                search_box.focus();
-                search_box.select();
-                dataList.search(search_text);
-            }, 300);
-        }
-
-        function exSearch(link) {
-            var search_text = "";
-            if (link.hash)
-                search_text = link.hash.replace("#", "");
-            else
-                search_text = link;
-            $('#tabs').tabs({ active: 3 }); //examples tab
-            var search_box = $("#search3");
-            search_box.val(search_text);
-
-            setTimeout(function () {
-                $('html, body').animate({
-                    scrollTop: $("#tabs").offset().top
-                }, 0);
-                search_box.focus();
-                search_box.select();
-                dataList.search(search_text);
-            }, 300);
-        }
-
-        function allSearch(this_search) {
-            if (this_search.value != "" && this_search.value.length >= 3) {
-                var value = this_search.value;
-                //TODO: Implement Stop Words
-                ssftList.search(value);
-
-                //hide table if there are no rows that match the search term
-                if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
-                    $("#softwareSearch #sftwrTable").show();
-                else
-                    $("#softwareSearch #sftwrTable").hide();
-
-                if (spubList != "") {
-                    var value = this_search.value;
-                    spubList.search(value);
-
-                    if ($("#publicationsSearch #pubTable tbody").children().length != 0)
-                        $("#publicationsSearch #pubTable").show();
-                    else
-                        $("#publicationsSearch #pubTable").hide();
-                }
-
-                if (sdtList != "") {
-                    var value = this_search.value;
-                    sdtList.search(value);
-
-                    if ($("#dataSearch #dataTable tbody").children().length != 0)
-                        $("#dataSearch #dataTable").show();
-                    else
-                        $("#dataSearch #dataTable").hide();
-                }
-
-                if (sxampleList != "") {
-                    var value = this_search.value;
-                    sdtList.search(value);
-
-                    if ($("#examplesSearch #examplesTable tbody").children().length != 0)
-                        $("#examplesSearch #examplesTable").show();
-                    else
-                        $("#examplesSearch #examplesTable").hide();
-                }
-
-            }
-            else {
-                //if search_term is empty or not 3 chars in length, make sure the tables are hidden
-                $("#publicationsSearch #pubTable").hide();
-                $("#softwareSearch #sftwrTable").hide();
-                $("#dataSearch #dataTable").hide();
-            }
-        }
-
-        function getTableHeaders(table) {
-            var this_table;
-
-            if (table[0])
-                this_table = table[0];
-            else
-                this_table = table;
-
-            var headerRow = this_table.tHead.rows[0].cells; //header row of table
-            var tableHeaders = [];
-
-            for (var j = 0; j < headerRow.length; j++)
-                tableHeaders.push(headerRow[j].textContent.toLowerCase());
-
-            return tableHeaders;
-        }
-
-        function licenseInfo(short_nm, long_nm, link, description, event) {
-
-            var x = event.clientX;
-            var y = event.clientY;
-
-            $("#dialog").removeClass("ribbon-dialog");
-            $(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
-            $(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
-
-            if (short_nm != "") {
-                $("#dialog").empty().dialog({
-                    position: [x, y - 20],
-                    title: short_nm
-                });
-
-                if (description != "")
-                    $("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
-                else
-                    $("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
-
-                $(".ui-dialog").mouseleave(function () {
-                    $("#dialog").dialog("close");
-                });
-            }
-        }
-
-        function dateInfo(ribbon, event) {
-            if (ribbon != "") {
-                var date_id = document.getElementById(ribbon).firstChild.id;
-                var str_pattern = /(\d{4})(\d{2})(\d{2})/;
-                var date = date_id.replace(str_pattern, "$2-$3-$1"); //full date string
-
-                var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
-                var x = event.clientX;
-                var y = event.clientY;
-                var text = "";
-                var background = "";
-
-                if (ribbon_type == "NEW") {
-                    text = "CREATED";
-                    $(".ui-dialog").removeClass('vertical-green');
-                    background = "vertical-red";
-                }
-                else {
-                    text = ribbon_type;
-                    $(".ui-dialog").removeClass('vertical-red');
-                    background = "vertical-green";
-                }
-
-                $("#dialog").empty().dialog({
-                    position: [x, y - 20],
-                    title: text + ": " + date,
-                });
-
-                $("#dialog").addClass("ribbon-dialog");
-                $(".ui-dialog").addClass(background + " ribbon-dialog");
-                $(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
-
-
-
-                $(".ui-dialog").mouseleave(function () {
-                    $("#dialog").dialog("close");
-                });
-            }
-        }
-
-    </script>
-    <header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+---
+layout: default
+title: DARPA - Open Catalog
+---
     <div width='98%'>
-        <p>Добро пожаловать в Открытый каталог DARPA, который содержит курируемый список спонсируемого DARPA программного обеспечения и рецензированных публикаций. DARPA спонсирует фундаментальные и прикладные исследования в различных областях, которые могут привести к экспериментальным результатам и повторному использованию технологий, предназначенной приносить пользу в различных государственных областях.</p>
-        <p>Открытый каталог DARPA организует общедоступный материал из программ DARPA. DARPA придерживается открытой стратегии чтобы помочь увеличить влияние государственных инвестиций.</p>
-        <p>DARPA заинтересована в построении сообществ вокруг финансируемых правительством исследований. DARPA планирует продолжать предоставлять информацию, генерируемую программами DARPA, включая программное обеспечение, публикации, данные и экспериментальные результаты.</p>
+        <p>Welcome to the DARPA Open Catalog, which contains a curated list of DARPA-sponsored software and peer-reviewed publications. DARPA sponsors fundamental and applied research in a variety of areas that may lead to experimental results and reusable technology designed to benefit multiple government domains.</p>
+        <p>The DARPA Open Catalog organizes publicly releasable material from DARPA programs. DARPA has an open strategy to help increase the impact of government investments.</p>
+        <p>DARPA is interested in building communities around government-funded research. DARPA plans to continue to make available information generated by DARPA programs, including software, publications, data, and experimental results.</p>
     </div><div id=''>
-        <p>В таблице на этой странице перечислены программы, которые в настоящее время участвуют в каталоге.</p>
+        <p>The table on this page lists the programs currently participating in the catalog.</p>
         <p>
-            Менеджер программ:<br>
+            Program Manager:<br>
             Mr. Wade Shen<br>
             <a href='mailto:wade.shen@darpa.mil'>wade.shen@darpa.mil</a>
         </p>
         <p>Сообщить о проблеме: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p>
-        <p>Последнее обновление: 16 июня 2017</p>
+        <p>Last updated: Jun 16, 2017</p>
     </div>
-    <div style='width:100%; float:left;'><h2>Текущие программы каталога:</h2></div>
+    <div style='width:100%; float:left;'><h2>Current Catalog Programs:</h2></div>
     <table id='splash' class='tablesorter'>
         <thead>
             <tr>
-                <th>Программа DARPA</th>
+                <th>DARPA Program</th>
                 <th>Office</th>
                 <th>Описание</th>
             </tr>
@@ -556,56 +44,47 @@
             <tr>
                 <td width=230> <a href='BET.html'>BET</a></td>
                 <td width=70>I2O</td>
-                <td>Цель программы Двойной Исполнительной Передачи (BET) заключается в том, чтобы производить революционные технологии для анализа исполняемых бинарных файлов для определения и извлечения исполняемых компонентов. Исполняемые компоненты определяются как полностью инкапсулированный набор подпрограмм, структур данных, объектов и глобальных переменных, которые выполняют определенную функцию, наряду с метаданными, документирующими аргументы компонента и используемые системные библиотеки. В частности, исполнители BET проводят инновационные исследования в: &bull; Автоматически анализируют бинарные файлы и определяют функциональные компоненты. &bull; Автоматическом разделении и извлечении идентифицированного функционала в повторно используемые компоненты с четко определенными входами и выходами. &bull; Объединение статического и динамического бинарного анализа для улучшения понимания бинарных исполняемых файлов. &bull; Исследование формальных методов проверки, чтобы доказать функциональные свойства компонента. &bull; Разработка промежуточного языка представления для поддержки раздвижки программ. &bull; Разработка технологий, позволяющих разведку и исследование программы BET.</td>
+                <td>Цель программы Двойной Исполнительной Передачи (BET) заключается в том, чтобы производить революционные технологии для анализа исполняемых бинарных файлов для определения и извлечения исполняемых компонентов. Executable components are defined as a fully encapsulated set of subroutines, data structures, objects and global variables that accomplish a particular function, along with metadata documenting the component's arguments and any system libraries used. Specifically, BET performers are conducting innovative research in: &bull; Automatically analyzing binaries and identifying functional components. &bull; Automatically slicing and extracting identified functionality into reusable components with well-defined inputs and outputs. &bull; Combining static and dynamic binary analysis to improve understanding of binary executables. &bull; Exploring formal verification methods to prove functional component properties. &bull; Developing intermediate representation language to support program slicing. &bull; Developing technologies to enable exploration and research for the BET program.</td>
             </tr>
             <tr>
                 <td width=230> <div class='wrapper'><a href='BigMech.html'>Big Mechanism</a></div></td>
                 <td width=70>I2O</td>
-                <td>Большие механизмы - большие, пояснительные модели сложных систем, в которых взаимодействие имеет важные причинно-следственные последствия.  Сбор больших данных становится все более автоматизированным, но создание больших механизмов остается человеческой попыткой, которая становится все труднее фрагментацией и распространением знаний.  Цель программы Большого Механизма – помочь людям моделировать и анализировать очень сложные системы путем чтения фрагментированной литературы и формируя рассуждения с помощью моделей.</td>
+                <td>Big mechanisms are large, explanatory models of complicated systems in which interactions have important causal effects.  The collection of big data is increasingly automated, but the creation of big mechanisms remains a human endeavor made increasingly difficult by the fragmentation and distribution of knowledge.  The goal of the Big Mechanism program is for machines to help humans to model and analyze very complicated systems by reading fragmented literatures and assembling the reasoning with models.</td>
             </tr>
             <tr>
                 <td width=230> <a href='Biochronicity.html'>Biochronicity</a></td>
                 <td width=70>BTO</td>
-                <td>Время важно для нескольких биологических процессов, в том числе для генного выражения, регулируемого циркуляром, связанного с метаболическим, клеточным циклом и иммунной системой. Всеобъемлющими целями БиоХроничности является интеграция математики, физики, и биологии для:
- (1) понимания зависимости от времени во время выражения генов,
- (2) формирования предиктивных моделей сложных биологических систем, и
- (3) регулирования молекуряных часов для модулирования медицинских результатов.</td>
+                <td>Time is important to multiple biological processes, including circadian-regulated gene expression related to metabolic, cell cycle, and immune system functions. The overarching goals of BioChronicity are the integration of math, physics, and biology to: (1) understand time-dependent gene expression, (2) generate predictive models of complex biological systems, and (3) regulate molecular clocks to modulate clinical outcomes.</td>
             </tr>
             <tr>
                 <td width=230> <a href='BOLT.html'>BOLT</a></td>
                 <td width=70>I2O</td>
-                <td>Программа Широкого Операционного Перевода Языков (Broad Operational Language Translation - BOLT) нацелена на предоставление возможностей общения с не говорящими английским языком населения и определения важной информации в источниках на иностранных языках путем:
- 1) позволения англоговорящим понимать иностранные источники всех жанров, включая чат, переписку и информальные сообщения;
- 2) предоставляя англоговорящим возможность быстро идентифицировать нужную информацию в источниках на иностранном языке используя запросы на обычном языке; и
- 3) позволяя несколько этапное общение в тексте и разговоре с не англоговорящими. В случае успеха, BOLT предоставляет все возможности, свободные от ограничений предметной области или жанра.</td>
+                <td>The Broad Operational Language Translation (BOLT) program is aimed at enabling communication with non-English-speaking populations and identifying important information in foreign-language sources by: 1) allowing English-speakers to understand foreign-language sources of all genres, including chat, messaging and informal conversation; 2) providing English-speakers the ability to quickly identify targeted information in foreign-language sources using natural-language queries; and 3) enabling multi-turn communication in text and speech with non-English speakers. If successful, BOLT would deliver all capabilities free from domain or genre limitations.</td>
             </tr>
             <tr>
                 <td width=230> <a href='CFT.html'>CFT</a></td>
                 <td width=70>I2O</td>
-                <td>Программа Cyber Fast Track (CFT) стремилась к революционным достижениям в области кибернауки, приборов и систем с помощью недорогих, быстрых проектов.  Для достижения этого CFT занимал новую исполнительную базу, многие из которых были новичками для государственного контрактинга.  С августа 2011 по апрель 2013 года программа привлекла 550 предложений, из которых 90 процентов были от исполнителей, которые ранее не работали с правительством, и получила 135 контрактов. </td>
+                <td>The Cyber Fast Track (CFT) program sought revolutionary advances in cyber science, devices, and systems through low-cost, quick-turnaround projects.  To achieve this, CFT engaged a novel performer base many of whom were new to government contracting.  From August 2011 to April 2013 the program attracted 550 proposal submissions, of which 90 percent were from performers that had never previously worked with the government, and awarded 135 contracts. </td>
             </tr>
             <tr>
                 <td width=230> <a href='CRASH.html'>CRASH</a></td>
                 <td width=70>I2O</td>
-                <td>Программа Clean-Slate Design of Resilient, Adaptive, Secure Hosts (CRASH) сконцентрирована на разработке новых компьютерных систем, которые очень устойчивы к кибератакам, могут адаптироваться после успешного нападения, чтобы продолжать оказывать полезные услуги, учиться из предыдущих атак, как защищать и справиться с будущими атаками, и может восстановить себя после успешно завершенных атак. Эта программа охватывает компьютерные архитектуры из процессоров и наборов инструкций, включает операционные системы и языки программирования и расширяется до инструментов уровня приложений.</td>
+                <td>The Clean-Slate Design of Resilient, Adaptive, Secure Hosts (CRASH) program is focused on the design of new computer systems that are highly resistant to cyberattack, can adapt after a successful attack to continue rendering useful services, learn from previous attacks how to guard against and cope with future attacks, and can repair themselves after attacks have succeeded. This program addresses computer architectures from processors and instruction sets, includes operating systems and programming languages, and extends up to application level tools.</td>
             </tr>
             <tr>
                 <td width=230> <a href='CSFV.html'>CSFV</a></td>
                 <td width=70>I2O</td>
-                <td>Crowd Sourced Formal Verification (CSFV) представляет собой программу DARPA, которая нацелена на изучение того, может ли большое количество не экспертов проводить формальную верификацию быстрее и более экономично, чем стандартные процессы. Цель заключается в трансформацию проверки в более доступную задачу, создавая веселые, интуитивные игры, отражающие проблемы формальной верификации. Играя в игру будет эффективно помочь инструментам программной верификации завершить соответствующе доказательства формальной верификации.</td>
+                <td>Crowd Sourced Formal Verification (CSFV) is a DARPA program that aims to investigate whether large numbers of non-experts can perform formal verification faster and more cost-effectively than conventional processes. The goal is to transform verification into a more accessible task by creating fun, intuitive games that reflect formal verification problems. Playing the games would effectively help software verification tools complete corresponding formal verification proofs.</td>
             </tr>
             <tr>
                 <td width=230> <a href='CyberGenome.html'>Cyber Defense (CyberGenome)</a></td>
                 <td width=70>I2O</td>
-                <td>Программа Кибер Защиты разрабатывает ключевые вычислительные и сетевые технологии требуемые для защиты информации Департамента Обороны,
- информационной инфраструктуры, и критической информационной инфраструктуры. Это включает новые техники кибер-расследования
- для автоматизации обнаружения, идентификации и характеризации вариантов злонамеренного кода и таким образом ускоряя разработку
- эффективных ответов.</td>
+                <td>The Cyber Defense Program is developing the core computing and networking technologies required to protect DoD's information, information infrastructure, and mission-critical information systems. This includes new cyber-forensic techniques to automate the discovery, identification, and characterization of malware variants and thereby accelerate the development of effective responses.</td>
             </tr>
             <tr>
                 <td width=230> <a href='DCAPS.html'>DCAPS</a></td>
                 <td width=70>I2O</td>
-                <td>Программа Обнаружение и Вычислительный Анализ Психологических Сигналов (The Detection and Computational Analysis of Psychological Signals - DCAPS) нацелена на разработку новых аналитических инструментов для оценки психологического статуса бойцов в надежде улучшить понимание психологического здоровья и дать им возможность получить своевременную помощь. Инструменты DCAPS будут разработаны для анализа моделей повседневного поведения для выявления тонких изменений, связанных с посттравматическим стрессовым расстройством, депрессией и суицидной идеацией. В частности, DCAPS надеется продвигать современное состояние в извлечении и анализе "честных сигналов" из широкого спектра датчиков, присущих ежедневным социальным взаимодействиям. DCAPS нацелен не на точное диагностирование, а на обеспечение общей метрики психического здоровья.</td>
+                <td>The Detection and Computational Analysis of Psychological Signals (DCAPS) program aims to develop novel analytical tools to assess psychological status of warfighters in the hopes of improving psychological health awareness and enabling them to seek timely help. DCAPS tools will be developed to analyze patterns in everyday behaviors to detect subtle changes associated with post-traumatic stress disorder, depression and suicidal ideation. In particular, DCAPS hopes to advance the state-of-the-art in extraction and analysis of 'honest signals' from a wide variety of sensory data inherent in daily social interactions. DCAPS is not aimed at providing an exact diagnosis, but at providing a general metric of psychological health.</td>
             </tr>
             <tr>
                 <td width=230> <a href='DEFT.html'>DEFT</a></td>
@@ -733,15 +212,3 @@
     </table>
     <br>
     <div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Назад</a></p></div></div>
-    <footer>
-        <div class='footer-style'>
-            <hr>
-            <p>
-                <a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
-                <a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a>
-            </p>
-        </div>
-    </footer>
-    </div>
-</body>
-</html>
