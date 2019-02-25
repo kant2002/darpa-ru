@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
     <meta charset="utf-8">
-    <title>DARPA - Open Catalog</title>
+    <title>{{ page.title | default: "DARPA - Open Catalog" }}</title>
     <link rel='stylesheet' href="css/nv.d3.css" rel="stylesheet" type="text/css">
     <link rel='stylesheet' href='css/style_v2.css' type='text/css' />
     <link rel='stylesheet' href='css/banner_style.css' type='text/css' />
@@ -521,7 +521,7 @@
         <div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div>
         <div class='darpa-header-text no-space'>
             {% if page.office %}
-            <span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>{{ page.office }}</a></span>
+            <span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: {{ page.officecolor }};'>{{ page.office }}</a></span>
             {% endif %}
         </div>
             <div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search' maxlength="30"></input><button id='header_button'>Search</button></div></div>
