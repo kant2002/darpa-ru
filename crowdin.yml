@@ -1,0 +1,5 @@
+files:
+  - source: '*.html'
+    ignore:
+      - ru/*.*
+    translation: '%two_letters_code%/%original_file_name%'
