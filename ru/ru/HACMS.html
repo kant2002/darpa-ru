@@ -1,0 +1,863 @@
+﻿
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - открытый каталог</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Назад</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/high-assurance-cyber-military-systems' class='programlink'>High-Assurance Cyber Military Systems (HACMS)</a></h2>
+<div class='left-paragraph'><p>The High-Assurance Cyber Military Systems (HACMS) program goal is to create technology for the construction of high-assurance cyber-physical systems, where high assurance is defined to mean functionally correct and satisfying appropriate safety and security properties. Key technologies include interactive software synthesis systems, verification tools, and specification languages.
+    <p>
+        <p>Program Manager: <a href='http://www.darpa.mil/staff/dr-raymond-richards' class='programmanagerlink'>Dr. Raymond Richards</a></p>
+      <p>Contact: <a href='https://contact.darpa.mil/contact?people=/staff/dr-raymond-richards'>Contact Dr. Raymond Richards</a>
+      <p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul>
+      <ul><li>В таблице публикаций содержится автор(ы), заголовок и ссылки на материалы, проверенные сверками, связанные с конкретными программами DARPA.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Программное обеспечение</a></li><li><a href='#tabs1'>Публикации</a></li><li><a href='#tabs300'>Поиск</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Поиск' id='search0'/><button class='clear_button' id='clear0'>Очистить</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Проект</th><th>Категория</th><th>Код</th><th>Описание</th><th>Лицензия</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Rockwell Collins <a href='#Rockwell Collins' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://crisys.cs.umn.edu/Tools.shtml' class='external' target='_blank'>FM Workbench</a></td>  <td class=category>Research Integration</td>
+  <td class=code> <a href=http://github.com/smaccm/smaccm class='external' target='_blank'>http://github.com/smaccm/smaccm</a> </td>
+ <td class=description> This repository contains 1) the AADL models with verification properties for the research air vehicle (quadcopter), 2) the AGREE analysis tool for compositional verification of behavioral properties, and 3) the Resolute tool for constructing and checking assurance cases on AADL models. </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Rockwell Collins <a href='#Rockwell Collins' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='https://github.com/agacek/jkind' class='external' target='_blank'>JKind model checker</a></td>  <td class=category>Research Integration</td>
+  <td class=code> <a href=https://github.com/agacek/jkind class='external' target='_blank'>https://github.com/agacek/jkind</a> </td>
+ <td class=description> JKind is a Java implementation of the KIND model checker. KIND is a parallel multi-property k-induction based model checker for Lustre programs. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Galois, Inc.</td>
+ <td width='202' class='project'><a href='http://smaccmpilot.org/' class='external' target='_blank'>SMACCMPilot</a></td>  <td class=category>Control Systems</td>
+  <td class=code> <a href=https://github.com/GaloisInc/smaccmpilot-build.git class='external' target='_blank'>https://github.com/GaloisInc/smaccmpilot-build.git</a> </td>
+ <td class=description> SMACCMPilot is an open source autopilot software for small, unmanned aerial vehicles (UAVs) using new high-assurance software methods. (C) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Galois, Inc.</td>
+ <td width='202' class='project'><a href='https://github.com/GaloisInc/cbmc-reporter' class='external' target='_blank'>cbmc-reporter</a></td>  <td class=category>Control Systems</td>
+  <td class=code> <a href=https://github.com/GaloisInc/cbmc-reporter.git class='external' target='_blank'>https://github.com/GaloisInc/cbmc-reporter.git</a> </td>
+ <td class=description> cbmc-reporter is a driver for the CBMC model-checker for use in verifying C library code. cbmc-reporter helps (1) utilize multi-threading when verifying a large number of claims, (2) generate summary tables of resulting proofs, and (3) aid in build-system integration for library code (e.g., parsing function definitions from sources). (Haskell) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Galois, Inc.</td>
+ <td width='202' class='project'><a href='https://github.com/GaloisInc/ivory' class='external' target='_blank'>Ivory</a></td>  <td class=category>Control Systems</td>
+  <td class=code> <a href=https://github.com/GaloisInc/smaccmpilot-build.git class='external' target='_blank'>https://github.com/GaloisInc/smaccmpilot-build.git</a> </td>
+ <td class=description> Ivory is an embedded domain-specific language for safer systems programming. Ivory is implemented as a library of the Haskell programming language. Ivory programs are written using Haskell syntax and types.Ivory is not a general purpose programming language. It aims to be a good language for writing a restricted subset of programs. Ivory gives strong guarantees of type and memory safety, and has features which allow the programmer to specify other safety properties. Ivory is well suited for writing programs which interact directly with hardware and do not require dynamic memory allocation. Ivory can be considered to be a lot like a restricted version of the C programming language, embedded in Haskell. (Haskell) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Galois, Inc.</td>
+ <td width='202' class='project'><a href='http://smaccmpilot.org/' class='external' target='_blank'>Tower</a></td>  <td class=category>Control Systems</td>
+  <td class=code> <a href=https://github.com/GaloisInc/smaccmpilot-build.git class='external' target='_blank'>https://github.com/GaloisInc/smaccmpilot-build.git</a> </td>
+ <td class=description> Tower is a language for composing Ivory programs into real-time tasks.  Tower is both a specification language and a code generator. A Tower program describes communication channels and tasks, and provides an Ivory implementation of each task.  Tower compiles the specification for the program and delegates code generation to an operating-system specific back end. (C) </td>
+<td class=license><span onmouseover='licenseInfo("BSDv3", "BSD 3-Clause New or Revised license", "http://opensource.org/licenses/BSD-3-Clause", "This permissive, free software license was created by removing the advertising clause from the original version of the BSD license. It is compatible with GNU GPL.", event)'>BSDv3</span> </td>
+ </tr>
+<tr>
+  <td class='team'>NICTA <a href='#NICTA' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://www.ertos.nicta.com.au/research/camkes/' class='external' target='_blank'>CAmkES: Component Architectures for microkernel-based Embedded System</a></td>  <td class=category>Operating Systems</td>
+  <td class=code> <a href=http://ssrg.nicta.com.au/software/TS/camkes/download.pml class='external' target='_blank'>http://ssrg.nicta.com.au/software/TS/camkes/download.pml</a> </td>
+ <td class=description> The CAmkES project provides a solution for quickly and reliably building complex microkernel-based embedded systems software. </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>NICTA <a href='#NICTA' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://www.ssrg.nicta.com.au/software/TS/wcet-tools/' class='external' target='_blank'>WCET: Worst-case execution time computations tools</a></td>  <td class=category>Operating Systems</td>
+  <td class=code> <a href=http://www.ssrg.nicta.com.au/software/TS/wcet-tools/wcet-tools-0.2.tar.gz class='external' target='_blank'>http://www.ssrg.nicta.com.au/software/TS/wcet-tools/wcet-tools-0.2.tar.gz</a> </td>
+ <td class=description> The WCET computation is based on Chronos 4.2 and is augmented with additional code to perform control flow graph extraction, loop bound computation, and infeasible path detection. The default modelled hardware is the ARM1136 i.MX31 processor on the KZM evaluation board. This software was developed as part of research into mixed-criticality real-time systems, and has been used to compute execution time bounds for seL4. </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>NICTA <a href='#NICTA' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://www.ssrg.nicta.com.au/projects/TS/filesystems.pml' class='external' target='_blank'>Trustworthy File Systems</a></td>  <td class=category>Operating Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> The aim of Trustworthy File Systems is to develop a methodology for the creation of correct-by-construction file systems. </td>
+<td class=license><span>Open Source License TBD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Princeton University <a href='#Princeton University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://vst.cs.princeton.edu/' class='external' target='_blank'>Verified Software Toolchain</a></td>  <td class=category>Operating Systems</td>
+  <td class=code> <a href=http://vst.cs.princeton.edu/download/ class='external' target='_blank'>http://vst.cs.princeton.edu/download/</a> </td>
+ <td class=description> The software toolchain includes static analyzers to check assertions about your program; optimizing compilers to translate your program to machine language; operating systems and libraries to supply context for your program.  The Verified Software Toolchain project assures with machine-checked proofs that the assertions claimed at the top of the toolchain really hold in the machine-language program, running in the operating-system context. </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span>, <span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Princeton University <a href='#Princeton University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Message-authentication enhancements to the ROS operating system</td>  <td class=category>Operating Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> Message-authentication enhancements to the ROS operating system. </td>
+<td class=license><span>Open source license TBD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Yale University <a href='#Yale University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://flint.cs.yale.edu/certikos/' class='external' target='_blank'>CertiKOS kernel</a></td>  <td class=category>Operating Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> CertiKOS is a new hypervisor kernel that leverages formal certification to ensure correctness and isolate critical services from noncritical components. </td>
+<td class=license><span>Open source license TBD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>MIT <a href='#MIT' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://plv.csail.mit.edu/bedrock/' class='external' target='_blank'>Bedrock Coq library</a></td>  <td class=category>Operating Systems</td>
+  <td class=code> <a href=http://plv.csail.mit.edu/bedrock/ class='external' target='_blank'>http://plv.csail.mit.edu/bedrock/</a> </td>
+ <td class=description> Bedrock is a library that turns Coq into a tool much like classical verification systems (e.g., ESC, Boogie), but niftier. In particular, Bedrock is: (1) Low-level: You can verify programs that, for performance reasons or otherwise, can't tolerate any abstraction beyond that associated with assembly language. (2) Foundational: The output of a Bedrock verification is a theorem whose statement depends only on the predicates you choose to use in the key specifications and on the operational semantics of a simple cross-platform machine language. That is, you don't need to trust that the verification framework is bug-free; rather, you need to trust the usual Coq proof-checker and the formalization of the machine language semantics. Higher-order: Bedrock facilitates quite pleasant reasoning about code pointers as data. (3) Computational: Many useful functions are specified most effectively by comparing with "reference implementations" in a pure functional language. Bedrock supports that model, backed by the full expressive power of Coq's usual programming language. (4) Structured: Bedrock is an extensible programming language: any client program may add new control flow constructs by providing their proof rules. For example, adding high-level syntax for your own calling convention or exception handling construct is relatively straightforward and does not require tweaking the core library code. (5) Mostly automated: Tactics automate verification condition generation (in a form inspired by separation logic) and most of the process of discharging those conditions. Many interesting programs can be verified with zero manual proof effort, in stark contrast to most Coq developments. </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Draper Laboratory</td>
+ <td width='202' class='project'>Fracture Tool / LLVM decompiler</td>  <td class=category>Red Team</td>
+  <td class=code> <a href=https://github.com/draperlaboratory/fracture class='external' target='_blank'>https://github.com/draperlaboratory/fracture</a> </td>
+ <td class=description> Draper's HACMS Decompiler is a software tool based on the LLVM open source compiler project. The HACMS Decompiler is a set of modifications to the LLVM compiler that make it run backwards. The HACMS Decompiler converts computer program instructions for a specific machine (binary software program) into generic machine instructions (machine-independent assembly program) called LLVM intermediate representation (IR). The HACMS Decompiler enables a user to directly analyze and modify the resulting LLVM IR.  Near term additions to the HAMCS Decompiler include the ability to emit a C program representation from the IR. The HACMS Decompiler currently supports ARM architectures, however it will be extended to include X86, PowerPC, MIPS, and other ISAs as required by the program. </td>
+<td class=license><span>Open Source License TBD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Draper Laboratory</td>
+ <td width='202' class='project'><a href='https://github.com/tomgr/libcspm' class='external' target='_blank'>CSPM parser/type-checker/evaluator included in FDR3</a></td>  <td class=category>Red Team</td> 
+  <td class=code> <a href=https://github.com/tomgr/libcspm.git class='external' target='_blank'>https://github.com/tomgr/libcspm.git</a> </td>
+ <td class=description> This library provides a FDR-compliant parser, type checker and (experimental) evaluator for machine CSP files. There is also a program, cspmchecker, that makes use of this library to provide command line type checking. </td>
+<td class=license><span>Open Source License TBD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI <a href='#SRI' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Evidential Tool Bus</td>  <td class=category>Research Integration</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> The evidential tool bus (ETB) allows for low-cost integration of diverse tools and components into customized tool chains, and the combination of evidence from different sources into a credible assurance case. </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>SRI <a href='#SRI' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>High-assurance ROS modules</td>  <td class=category>Research Integration</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> New high-assurance ROS modules that will provide security services, such as authentication and integrity. </td>
+<td class=license><span>BSD license TBD</span> </td>
+ </tr>
+<tr>   
+  <td class='team'>Kestrel Institute</td>
+ <td width='202' class='project'><div class='wrapper'><div class='wrapper-text'><a href='http://www.specware.org/' class='external' target='_blank'>Specware System</a></div><div class='ribbon-wrapper'><div class='ribbon-standard ribbon-green'>UPD May 18th</div></div></div></td>  <td class=category>Operating Systems</td>
+  <td class=code> <a href=https://github.com/KestrelInstitute/Specware/ class='external' target='_blank'>https://github.com/KestrelInstitute/Specware/</a> </td>
+ <td class=description> Specware is a software engineering tool that automatically generates high-assurance software. Specware is a leading-edge automated software development system that allows users to precisely specify the desired functionality of their applications and to generate provably correct code based on these requirements. At the core of the design process in Specware lies stepwise refinement, in which users begin with a simple, abstract model of their problem and iteratively refine this model until it uniquely and concretely describes their application. </td>
+<td class=license><span onmouseover='licenseInfo("BSD", "Berkeley Source Distribution", "http://en.wikipedia.org/wiki/BSD_licenses", "This permissive, free software license imposes minimal restrictions on the redistribution of covered software.", event)'>BSD</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Pennsylvania <a href='#University of Pennsylvania' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>ROS based cruise controller simulator</td>  <td class=category>Control Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> ROS-based cruise controller simulator. </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Pennsylvania <a href='#University of Pennsylvania' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Attack-resilient implementation of cruise controllers</td>  <td class=category>Control Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> A constant-speed cruise control for LandShark that ensures the vehicle maintains speed when some sensors are attacked (e.g., attack on encoders & GPS spoofing).  Also includes adaptive cruise control for an American Built Car based on the CarSim simulator. </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Pennsylvania <a href='#University of Pennsylvania' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>Attack-resilient sensor fusion module</td>  <td class=category>Control Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> Ubiquitous/redundant sensors can provide additional information about system state. Low-precision sensors can be used to improve attack detection and identification. </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Carnegie Mellon University <a href='#Carnegie Mellon University' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'>HACMS Spiral package</td>  <td class=category>Control Systems</td>
+  <td class=code> Not Ready for Release </td>
+ <td class=description> Open source Spiral package running on the core Spiral engine.  Provides sensor fusion and consistency algorithms, optimized interval arithmetic, and code generation capabilities for advanced Intel instruction sets (SSE, AVX). Includes example specifications in the 'Hybrid control operator language (HCOL)' and an Eclipse-based GUI. </td>
+<td class=license><span>Open Source License TBD</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Поиск' id='search1'/><button class='clear_button' id='clear1'>Очистить</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></td>
+<td class='title'>Motion Interference Detection in Mobile Robots</td>  <td class='link'><a href='http://www.cs.cmu.edu/~mmv/papers/12iros-MendozaVelosoSimmons.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~mmv/papers/12iros-MendozaVelosoSimmons.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></td>
+<td class='title'>Mobile Robot Fault Detection based on Redundant Information Statistics</td>  <td class='link'><a href='http://www.cs.cmu.edu/~mmv/papers/12irosw-MendozaVelosoSimmons.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~mmv/papers/12irosw-MendozaVelosoSimmons.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></td>
+<td class='title'>A Vision of Collaborative Verification-Driven Engineering of Hybrid Systems</td>  <td class='link'><a href='http://www.cs.bham.ac.uk/research/projects/formare/events/aisb2013/submissions/stage2/99990008.pdf' class='external' target='_blank'>http://www.cs.bham.ac.uk/research/projects/formare/events/aisb2013/submissions/stage2/99990008.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Carnegie Mellon University<a name='Carnegie Mellon University'></a></td>
+<td class='title'>On Provably Safe Obstacle Avoidance for Autonomous Robotic Ground Vehicles</td>  <td class='link'><a href='http://symbolaris.com/pub/robix.pdf' class='external' target='_blank'>http://symbolaris.com/pub/robix.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>MIT<a name='MIT'></a></td>
+<td class='title'>Combining Generative Metaprogramming and Hoare Logic in an Extensible Program Verifier</td>  <td class='link'><a href='http://adam.chlipala.net/papers/BedrockICFP13/BedrockICFP13.pdf' class='external' target='_blank'>http://adam.chlipala.net/papers/BedrockICFP13/BedrockICFP13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>NICTA<a name='NICTA'></a></td>
+<td class='title'>seL4: from General Purpose to a Proof of Information Flow Enforcement</td>  <td class='link'><a href='http://www.ieee-security.org/TC/SP2013/papers/4977a415.pdf' class='external' target='_blank'>http://www.ieee-security.org/TC/SP2013/papers/4977a415.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>NICTA<a name='NICTA'></a></td>
+<td class='title'>Binary Verification of an OS Microkernel</td>  <td class='link'><a href='http://www.cl.cam.ac.uk/~mom22/pldi13.pdf' class='external' target='_blank'>http://www.cl.cam.ac.uk/~mom22/pldi13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>NICTA<a name='NICTA'></a></td>
+<td class='title'>File Systems Deserve Verification Too!</td>  <td class='link'><a href='http://plosworkshop.org/2013/preprint/keller.pdf' class='external' target='_blank'>http://plosworkshop.org/2013/preprint/keller.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>NICTA<a name='NICTA'></a></td>
+<td class='title'>Towards a Verified Component Platform</td>  <td class='link'><a href='http://plosworkshop.org/2013/preprint/fernandez.pdf' class='external' target='_blank'>http://plosworkshop.org/2013/preprint/fernandez.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Princeton University<a name='Princeton University'></a></td>
+<td class='title'>Mostly sound type system improves a foundational program verifier</td>  <td class='link'><a href='http://www.cs.princeton.edu/~appel/papers/typecheck.pdf' class='external' target='_blank'>http://www.cs.princeton.edu/~appel/papers/typecheck.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Princeton University<a name='Princeton University'></a></td>
+<td class='title'>Computational Verification of Network Programs in Coq</td>  <td class='link'><a href='http://www.cs.princeton.edu/~jsseven/papers/netcorewp/' class='external' target='_blank'>http://www.cs.princeton.edu/~jsseven/papers/netcorewp/</a></td>
+</tr>
+<tr>
+  <td class='team'>Princeton University<a name='Princeton University'></a></td>
+<td class='title'>Program Logics for Certified Compilers</td>  <td class='link'><a href='http://vst.cs.princeton.edu/PLCC-sample.pdf' class='external' target='_blank'>http://vst.cs.princeton.edu/PLCC-sample.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Rockwell Collins<a name='Rockwell Collins'></a>, University of Minnesota<a name='University of Minnesota'></a></td>
+<td class='title'>Your What Is My How: Iteration and Hierarchy in System Design</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6359702' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6359702</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Automated Reasoning, Fast and Slow?</td>  <td class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-38574-2_10' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-38574-2_10</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Logic and Epistemology in Safety Classes</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>ARSENAL: Automatic Requirements Specification Extraction from Natural Language</td>  <td class='link'><a href='http://arxiv.org/pdf/1403.3142.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1403.3142.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Reasoning about the Reliability Of Diverse Two-Channel Systems In which One Channel is 'Possibly Perfect'</td>  <td class='link'><a href='http://openaccess.city.ac.uk/1069/' class='external' target='_blank'>http://openaccess.city.ac.uk/1069/</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Tool Integration with the Evidential Tool Bus</td>  <td class='link'><a href='http://cedeela.fr/~simon/files/etb.pdf' class='external' target='_blank'>http://cedeela.fr/~simon/files/etb.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Time-Aware Relational Abstractions for Hybrid Systems</td>  <td class='link'><a href='https://es-static.fbk.eu/people/mover/paper/relabs/time-aware.pdf' class='external' target='_blank'>https://es-static.fbk.eu/people/mover/paper/relabs/time-aware.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a>, University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a></td>
+<td class='title'>Safety Verification for Linear Systems</td>  <td class='link'><a href='http://www.csl.sri.com/~tiwari/papers/emsoft2013_hsalcegar.pdf' class='external' target='_blank'>http://www.csl.sri.com/~tiwari/papers/emsoft2013_hsalcegar.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>UCLA<a name='UCLA'></a></td>
+<td class='title'>Security for control systems under sensor and actuator attacks</td>  <td class='link'><a href='http://www.mit.edu/~hfawzi/security_cdc2012.pdf' class='external' target='_blank'>http://www.mit.edu/~hfawzi/security_cdc2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>UCLA<a name='UCLA'></a></td>
+<td class='title'>Non-invasive Active Sensor Signal Spoofing Attacks on ABS Operation</td>  <td class='link'><a href='http://www.chesworkshop.org/ches2013/presentations/CHES2013_Session1_4.pdf' class='external' target='_blank'>http://www.chesworkshop.org/ches2013/presentations/CHES2013_Session1_4.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>UCLA<a name='UCLA'></a></td>
+<td class='title'>Minimax Control For Cyber-Physical Systems under Network Packet Scheduling Attacks</td>  <td class='link'><a href='http://people.kth.se/~araujo/publications/hicons14-shoukry.pdf' class='external' target='_blank'>http://people.kth.se/~araujo/publications/hicons14-shoukry.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Minnesota<a name='University of Minnesota'></a></td>
+<td class='title'>Compositional Verification of a Medical Device System</td>  <td class='link'><a href='http://www.umsec.umn.edu/publications/compositional-verification-medical-device-system' class='external' target='_blank'>http://www.umsec.umn.edu/publications/compositional-verification-medical-device-system</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Minnesota<a name='University of Minnesota'></a></td>
+<td class='title'>Your what is my how: Why requirements and architectural design should be iterative</td>  <td class='link'><a href='http://www.umsec.umn.edu/publications/Your-what-my-how-Why-requirements-and' class='external' target='_blank'>http://www.umsec.umn.edu/publications/Your-what-my-how-Why-requirements-and</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Stochastic Game Approach for Replay Attack Detection</td>  <td class='link'><a href='http://rtg.cis.upenn.edu/HACMS/docs/ReplayGame_cdc13.pdf' class='external' target='_blank'>http://rtg.cis.upenn.edu/HACMS/docs/ReplayGame_cdc13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Resilient Adaptive Control with Application to Vehicle Cruise Control</td>  <td class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-319-01159-2_11' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-319-01159-2_11</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Pennsylvania<a name='University of Pennsylvania'></a>, UCLA<a name='UCLA'></a>, Carnegie Mellon University<a name='Carnegie Mellon University'></a></td>
+<td class='title'>Towards Synthesis of Platform-aware Attack-Resilient Control Systems</td>  <td class='link'><a href='http://www.georgejpappas.org/papers/p75-pajic.pdf' class='external' target='_blank'>http://www.georgejpappas.org/papers/p75-pajic.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>A Case for Behavior-Preserving Actions in Separation Logic</td>  <td class='link'><a href='http://flint.cs.yale.edu/flint/publications/bpsltr.pdf' class='external' target='_blank'>http://flint.cs.yale.edu/flint/publications/bpsltr.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Modular Verification of Concurrent Thread Management</td>  <td class='link'><a href='http://flint.cs.yale.edu/flint/publications/ctm.pdf' class='external' target='_blank'>http://flint.cs.yale.edu/flint/publications/ctm.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Characterizing Progress Properties of Concurrent Objects via Contextual Refinements</td>  <td class='link'><a href='http://flint.cs.yale.edu/flint/publications/eqconcur.pdf' class='external' target='_blank'>http://flint.cs.yale.edu/flint/publications/eqconcur.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Compositional Verification of a Baby Virtual Memory Manager</td>  <td class='link'><a href='http://flint.cs.yale.edu/flint/publications/babyvmm_tr.pdf' class='external' target='_blank'>http://flint.cs.yale.edu/flint/publications/babyvmm_tr.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>Quantitative Reasoning for Proving Lock-Freedom</td>  <td class='link'><a href='http://cs-www.cs.yale.edu/homes/hoffmann/papers/lockfree2012full.pdf' class='external' target='_blank'>http://cs-www.cs.yale.edu/homes/hoffmann/papers/lockfree2012full.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>The Semantics of Datalog for the Evidential Tool Bus</td>  <td class='link'><a href='http://stijnheymans.net/pubs/sas2014.pdf' class='external' target='_blank'>http://stijnheymans.net/pubs/sas2014.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Yale University<a name='Yale University'></a></td>
+<td class='title'>A Separation Logic for Enforcing Declarative Information Flow  Control Policies</td>  <td class='link'><a href='http://flint.cs.yale.edu/certikos/slides/IFC.pdf' class='external' target='_blank'>http://flint.cs.yale.edu/certikos/slides/IFC.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Attack-Resilient Sensor Fusion</td>  <td class='link'><a href='http://repository.upenn.edu/cgi/viewcontent.cgi?article=1815&context=cis_papers' class='external' target='_blank'>http://repository.upenn.edu/cgi/viewcontent.cgi?article=1815&context=cis_papers</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Pennsylvania<a name='University of Pennsylvania'></a></td>
+<td class='title'>Resilient Multidimensional Sensor Fusion using Measurement History</td>  <td class='link'><a href='http://repository.upenn.edu/cgi/viewcontent.cgi?article=1816&context=cis_papers' class='external' target='_blank'>http://repository.upenn.edu/cgi/viewcontent.cgi?article=1816&context=cis_papers</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Safety Envelope for Security</td>  <td class='link'><a href='http://www.csl.sri.com/users/tiwari/papers/hicons14.pdf' class='external' target='_blank'>http://www.csl.sri.com/users/tiwari/papers/hicons14.pdf</a></td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Поиск' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Очистить</button><div id='sftwrTable'><h2>Программное обеспечение</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Публикации</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
