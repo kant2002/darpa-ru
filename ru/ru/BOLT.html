@@ -1,0 +1,1468 @@
+
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - открытый каталог</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Назад</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/broad-operational-language-translation' class='programlink'>Broad Operational Language Translation (BOLT)</a></h2>
+<div class='left-paragraph'><p>The Broad Operational Language Translation (BOLT) program is aimed at enabling communication with non-English-speaking populations and identifying important information in foreign-language sources by: 1) allowing English-speakers to understand foreign-language sources of all genres, including chat, messaging and informal conversation; 2) providing English-speakers the ability to quickly identify targeted information in foreign-language sources using natural-language queries; and 3) enabling multi-turn communication in text and speech with non-English speakers. If successful, BOLT would deliver all capabilities free from domain or genre limitations.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-boyan-onyshkevych' class='programmanagerlink'>Dr. Boyan Onyshkevych</a></p><p>Contact: <a href='mailto:boyan.onyshkevych@darpa.mil'>boyan.onyshkevych@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>В таблице публикаций содержится автор(ы), заголовок и ссылки на материалы, проверенные сверками, связанные с конкретными программами DARPA.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div>
+<div class='right-image'><img src="BOLT-image.png"/></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Программное обеспечение</a></li><li><a href='#tabs1'>Публикации</a></li><li><a href='#tabs300'>Поиск</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Поиск' id='search0'/><button class='clear_button' id='clear0'>Очистить</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Проект</th><th>Категория</th><th>Код</th><th>Описание</th><th>Лицензия</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>THUnderBOLT - Sub</td>
+ <td width='202' class='project'>OOV and Name Detection</td>  <td class=category>OOV and Name Detection</td>
+  <td class=code> <a href='mailto:ostendor@u.washington.edu'>ostendor@u.washington.edu</a> </td>
+ <td class=description> The OOV and Name Detection module detects out-of-vocabulary (OOV) and name regions in ASR output. The software developed under BOLT includes code for wrapping the MALLET and Stanford parser, for performing feature extraction and various data manipulation, and for scoring outputs. Development under BOLT also includes modifications to Stanford parser, which include grammar changes for OOV/error rules and for epsilon arcs in confusion networks, as well as code changes to train a log-linear model that is used for scoring the added rules. (Perl/Java) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>THUnderBOLT - Sub</td>
+ <td width='202' class='project'>Error Processing and Answer Merging</td>  <td class=category>Error Processing and Answer Merging</td>
+  <td class=code> <a href='mailto:frederic.bechet@lif.univ-mrs.fr'>frederic.bechet@lif.univ-mrs.fr</a> </td>
+ <td class=description> The Error Processing and Answer Merging module includes error processing and answer merging. The error processing component processes and extends error segments from the ASR Error Detection component and OOV and Name Detection component so that the error segments are easy to clarify. The answer merging component merges clarification with user's initial utterance. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>THUnderBOLT - Sub</td>
+ <td width='202' class='project'><a href='http://macaon.lif.univ-mrs.fr/index.php?page=home-en' class='external' target='_blank'>macaon</a></td>  <td class=category>Natural Language Processing</td>
+  <td class=code> <a href='mailto:benoit.favre@lif.univ-mrs.fr'>benoit.favre@lif.univ-mrs.fr</a> </td>
+ <td class=description> macaon is a tool suite for standard Natural Language Processing tasks (tagging, parsing...) that can process hypotheses. (C/C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span> </td>
+ </tr>
+<tr>
+  <td class='team'>THUnderBOLT - Sub</td>
+ <td width='202' class='project'>Word Sense Induction Suite</td>  <td class=category>Word Sense Induction</td>
+  <td class=code> <a href='mailto:james@cs.rochester.edu'>james@cs.rochester.edu</a> </td>
+ <td class=description> Word Sense Induction Suite is a suite of scripts used to induce word senses from bilingual alignments, and cluster senses for different words into semantically related sets. (Perl) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>, <span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>THUnderBOLT - Sub</td>
+ <td width='202' class='project'>Word Sense Tagger</td>  <td class=category>Word Sense Tagging</td>
+  <td class=code> <a href='mailto:james@cs.rochester.edu'>james@cs.rochester.edu</a> </td>
+ <td class=description> The Word Sense Tagger is used to: 1) train statistical models for tagging text with word senses; and 2) apply those models for tagging new text with word senses. (Ruby/JRuby) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span>, <span onmouseover='licenseInfo("CPL", "Common Public License", "http://opensource.org/licenses/cpl1.0.php", "This free software license has weak copyleft and choice of law clauses that make it incompatible with the GNU GPL.", event)'>CPL</span>, <span onmouseover='licenseInfo("GPL", "GNU General Public License (GPL) version 3", "http://www.gnu.org/licenses/gpl.html", "The latest version of the GNU GPL, this is a free software and copyleft license.", event)'>GPL</span>, <span onmouseover='licenseInfo("LGPL", "GNU Library or Lesser General Public License (LGPL)", "http://www.gnu.org/licenses/lgpl.html", "This free software license is not strong copyleft, as it permits linking with nonfree modules.", event)'>LGPL</span>, <span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN BOLT Arabic MT System</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software translates Arabic input text to English. (C++/Perl) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN BOLT Arabic MT Trainer</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software trains models of Arabic-English MT system. (C++/Perl) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN BOLT Chinese MT System</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software translates Chinese input text to English. (C++/Perl) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN BOLT Chinese MT Trainer</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software trains models of Chinese-English MT system. (C++/Perl) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>Neural Network Trainer</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software trains neural network models. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>Unsupervised Morphological Segmenter</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software trains unsupervised models of morphological segmenter. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>English paraphraser</td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software generates paraphrases of English sentences. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN BOLT IR Retrieval System</td>  <td class=category>Information Retrieval</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software provides lists of ranked snippets from a large corpus in response to a natural language query. (C++/Python) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN BOLT IR Clustering System</td>  <td class=category>Information Retrieval</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> Software groups lists of snippets into thematic clusters with labels. (C++/Python) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>BBN TransTalk: Speech-to-Speech Translator with Interactive Error Detection and Resolution</td>  <td class=category>Speech-to-Speech Translation</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> The software system is a speech-to-speech translation application for Windows-based devices that allows speakers to communicate across language barriers. The system includes novel functionality to prevent communication failure that detects speech recognition and translation errors and engages in interactive dialog with the users to recover from those errors. (Java/C++) </td>
+<td class=license><span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span>, <span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>WMS2 Informal Content Analyzer for Arabic</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> This is the core text content analysis engine for informal Arabic integrated into BBN Web Monitoring System. This engine integrates with the LW informal MT product. (C++/C#) </td>
+<td class=license><span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - BBN</td>
+ <td width='202' class='project'>WMS2 Informal Content Analyzer for Chinese</td>  <td class=category>NLP</td>
+  <td class=code> <a href='mailto:BOLT-software-requests@bbn.com'>BOLT-software-requests@bbn.com</a> </td>
+ <td class=description> This is the core text content analysis engine for informal Chinese integrated into BBN Web Monitoring System. This engine integrates with the LW informal MT product. (C++/C#) </td>
+<td class=license><span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - SDL</td>
+ <td width='202' class='project'><a href='http://sdlgov.com' class='external' target='_blank'>Informal Arabic-English MT Engine</a></td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:bolt.software.requests@sdl.com'>bolt.software.requests@sdl.com</a> </td>
+ <td class=description> This is Informal Arabic-English COTS machine translation software that is commercialized by SDL Government. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - SDL</td>
+ <td width='202' class='project'><a href='http://sdlgov.com' class='external' target='_blank'>Informal Chinese-English MT Engine</a></td>  <td class=category>Machine Translation</td>
+  <td class=code> <a href='mailto:bolt.software.requests@sdl.com'>bolt.software.requests@sdl.com</a> </td>
+ <td class=description> This is Informal Chinese-English COTS machine translation software that is commercialized by SDL Government. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("COTS", "Commercial off-the-shelf", "http://en.wikipedia.org/wiki/Commercial_off-the-shelf", "This license is governed by the 3rd-party vendor providing the software. It is neither free nor open source.", event)'>COTS</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - CADIM</td>
+ <td width='202' class='project'>MADAMIRA: Base Phrase Chunking Component</td>  <td class=category>NLP, shallow parsing</td>
+  <td class=code> <a href='mailto:cadim@ccls.columbia.edu'>cadim@ccls.columbia.edu</a> </td>
+ <td class=description> Base Phrase Chunking (BPC), also known as shallow syntactic parsing, is the process by which adjacent words are grouped together to form nonrecursive chunks in a sentence. The base chunks we currently recognize are: ADJP (Adjectival phrase), ADVP (Adverbial phrase), CONJP (Conjunctive phrase), FRAG (Fragment), INTJ (Interjective phrase), LST (List), NAC (Not a Constituent), NP (Noun phrase), PP (Prepositional phrase), PRN (Parenthetical phrase), S (Sentence marker), SBAR (Subjunctive construction), SBARQ (Subjunctive question), VP (Verb phrase), WHADVP (Adverbial phrase 'Wh' question), WHNP (Noun phrase 'Wh' question), and WHPP (Prepositional phrase 'Wh' question). (Java/Perl) </td>
+<td class=license><span onmouseover='licenseInfo("NCSLA", "Non-Commercial Software License Agreement (CU14012)", "https://secure.nouvant.com/columbia/technology/cu14012/license/258", "A Columbia University license that allows for free use of this software for non-commercial, academic, or research purposes only.", event)'>NCSLA</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - CADIM</td>
+ <td width='202' class='project'>MADAMIRA: NER component</td>  <td class=category>NLP, Named Entity Identification and Classification</td>
+  <td class=code> <a href='mailto:cadim@ccls.columbia.edu'>cadim@ccls.columbia.edu</a> </td>
+ <td class=description> MADAMIRA NER component is designed to identify and classify all occurrences of named entities in an Arabic text. The three categories that a named entity can fall under are: ORGANIZATION, LOCATION, and PERSON. (Java) </td>
+<td class=license><span onmouseover='licenseInfo("NCSLA", "Non-Commercial Software License Agreement (CU14012)", "https://secure.nouvant.com/columbia/technology/cu14012/license/258", "A Columbia University license that allows for free use of this software for non-commercial, academic, or research purposes only.", event)'>NCSLA</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - CADIM</td>
+ <td width='202' class='project'><a href='http://innovation.columbia.edu/technologies/cu14012_arabic-language-disambiguation-for-natural-language-processing-applications' class='external' target='_blank'>MADAMIRA: tokenization, lemmatization, diacritization, POS tagging</a></td>  <td class=category>Tokenization, lemmatization, diacritization, POS tagging, segmentation, MSA, Dialectal Arabic</td>
+  <td class=code> <a href='mailto:cadim@ccls.columbia.edu'>cadim@ccls.columbia.edu</a> </td>
+ <td class=description> MADAMIRA is a system for Morphological Analysis and Disambiguation for Arabic. Its primary purpose is to derive as much linguistic information as possible about each word in a given text, thereby reducing or eliminating any ambiguity surrounding the word. MADAMIRA's core functionality includes: tokenization, part-of-speech tagging, morphological disambiguation for a full range of morphological features, lemmatization, diacritization, named entity recognition, and base phrase chunking. (Java/Perl) </td>
+<td class=license><span onmouseover='licenseInfo("NCSLA", "Non-Commercial Software License Agreement (CU14012)", "https://secure.nouvant.com/columbia/technology/cu14012/license/258", "A Columbia University license that allows for free use of this software for non-commercial, academic, or research purposes only.", event)'>NCSLA</span> </td>
+ </tr>
+<tr>
+  <td class='team'>ASTRAL - CADIM</td>
+ <td width='202' class='project'>MADA-ARZ</td>  <td class=category>Tokenization, lemmatization, diacritization, POS tagging, segmentation, Egyptian Arabic</td>
+  <td class=code> <a href='mailto:cadim@ccls.columbia.edu'>cadim@ccls.columbia.edu</a> </td>
+ <td class=description> MADA-ARZ is an adaptation of MADA (Version 3.2), built to handle the Egyptian dialect.  For the most part, the operation of MADA-ARZ is the same as MADA 3.2. MADA 3.2 is a system for Morphological Analysis and Disambiguation for Arabic. Its primary purpose is to derive as much linguistic information as possible about each word in a given text, thereby reducing or eliminating any ambiguity surrounding the word. MADA 3.2 also contains a general tokenizer. (Perl) </td>
+<td class=license><span onmouseover='licenseInfo("NCSLA", "Non-Commercial Software License Agreement (CU14012)", "https://secure.nouvant.com/columbia/technology/cu14012/license/258", "A Columbia University license that allows for free use of this software for non-commercial, academic, or research purposes only.", event)'>NCSLA</span> </td>
+ </tr>
+<tr>
+  <td class='team'>DELPHI - IBM</td>
+ <td width='202' class='project'>IBM Arabic Front-End Processor</td>  <td class=category>Statistical Machine Translation</td>
+  <td class=code> <a href='mailto:resweb@us.ibm.com'>resweb@us.ibm.com</a> </td>
+ <td class=description> Software for processing Arabic input and performing source-side analysis, including segmentation, tokenization, number classing, orthography normalization, and light spelling correction. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>DELPHI - IBM</td>
+ <td width='202' class='project'>IBM Chinese Front-End Processor</td>  <td class=category>Statistical Machine Translation</td>
+  <td class=code> <a href='mailto:resweb@us.ibm.com'>resweb@us.ibm.com</a> </td>
+ <td class=description> Software for processing Chinese input and performing source-side analysis, including segmentation, tokenization, and number classing. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>DELPHI - IBM</td>
+ <td width='202' class='project'>IBM DTM2 Decoder</td>  <td class=category>Statistical Machine Translation</td>
+  <td class=code> <a href='mailto:resweb@us.ibm.com'>resweb@us.ibm.com</a> </td>
+ <td class=description> A maximum-entropy, phrase-based decoder for statistical machine translation. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>DELPHI - IBM</td>
+ <td width='202' class='project'>IBM ForSyn Decoder</td>  <td class=category>Statistical Machine Translation</td>
+  <td class=code> <a href='mailto:resweb@us.ibm.com'>resweb@us.ibm.com</a> </td>
+ <td class=description> A Formal Syntax Statistical Machine translation decoder. The decoder is a forest-to-string, hierarchical decoder. (C++) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>DELPHI - IBM</td>
+ <td width='202' class='project'>IBM XML parsing and reformatting scripts</td>  <td class=category>Statistical Machine Translation</td>
+  <td class=code> <a href='mailto:resweb@us.ibm.com'>resweb@us.ibm.com</a> </td>
+ <td class=description> A collection of scripts to convert from and to the XML format required by NIST to deliver BOLT input/output. (Perl) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Linguistic Data Consortium</td>
+ <td width='202' class='project'>LDC2014E112 BOLT Uzbek Language Pack and LDC2014E115 BOLT Turkish Language Pack</td>  <td class=category>Linguistics</td>
+  <td class=code> <a href='mailto:ldc@ldc.upenn.edu'>ldc@ldc.upenn.edu</a> </td>
+ <td class=description> Support linguistic research in leveraging language-universal resources, projecting from related-language resources, and fully exploiting a broad range of language-specific resources. </td>
+<td class=license><span onmouseover='licenseInfo("NCSLA", "Non-Commercial Software License Agreement (CU14012)", "https://secure.nouvant.com/columbia/technology/cu14012/license/258", "A Columbia University license that allows for free use of this software for non-commercial, academic, or research purposes only.", event)'>NCSLA</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Поиск' id='search1'/><button class='clear_button' id='clear1'>Очистить</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Trait-Based Hypothesis Selection For Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology//N/N12/N12-1059.pdf' class='external' target='_blank'>http://aclweb.org/anthology//N/N12/N12-1059.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a>, Microsoft Research<a name='Microsoft Research'></a>, Johns Hopkins University<a name='Johns Hopkins University'></a></td>
+<td class='title'>Machine Translation of Arabic Dialects</td>  <td class='link'><a href='http://aclweb.org/anthology//N/N12/N12-1006.pdf' class='external' target='_blank'>http://aclweb.org/anthology//N/N12/N12-1006.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Systematic Comparison of Professional and Crowdsourced Reference Translations for Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology/N/N13/N13-1069.pdf' class='external' target='_blank'>http://aclweb.org/anthology/N/N13/N13-1069.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Factored Soft Source Syntactic Constraints for Hierarchical Machine Translation</td>  <td class='link'><a href='http://www.aclweb.org/anthology/D/D13/D13-1053.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/D/D13/D13-1053.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Semi-Supervised Word Sense Disambiguation for Mixed-Initiative Conversational Spoken Language Translation</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Variable-Span Out-of-Vocabulary Named Entity Detection</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Interactive Error Resolution Strategies for Speech-to-Speech Translation Systems</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Incremental Topic-Based Translation Model Adaptation for Conversational Spoken Language Translation</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>ASR Error Detection in a Conversational Spoken Language Translation System</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Batch-mode Semi-supervised Active Learning for Statistical Machine Translation</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Active Error Detection and Resolution for Speech-to-Speech Translation</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Detecting OOV Named Entities in Conversational Speech</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Automatic Pronunciation Prediction for Text-to-Speech Synthesis of Dialectal Arabic in a Speech-to-Speech Translation System</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>Speech Paralinguistic Event Detection Using Probabilistic Time-Series Smoothing and Masking</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a></td>
+<td class='title'>A Study on the Effect of Prosodic Emphasis on Overall Speech Translation Quality</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>BBN<a name='BBN'></a>, USC<a name='USC'></a>, University of Cambridge<a name='University of Cambridge'></a>, Columbia University<a name='Columbia University'></a>, University of Oxford<a name='University of Oxford'></a>, University of Edinburgh<a name='University of Edinburgh'></a>, University of Southern California<a name='University of Southern California'></a></td>
+<td class='title'>Semantics-Based Machine Translation with Hyperedge Replacement Grammars</td>  <td class='link'><a href='http://www.isi.edu/~chiang/papers/hrg-parsing.pdf' class='external' target='_blank'>http://www.isi.edu/~chiang/papers/hrg-parsing.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a>, Nuance Communications<a name='Nuance Communications'></a></td>
+<td class='title'>Dependency Parsing of Modern Standard Arabic with Lexical and Inflectional Features</td>  <td class='link'><a href='http://www.aclweb.org/anthology/J/J13/J13-1008.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/J/J13/J13-1008.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Automatic Extraction of Morphological Lexicons from Morphologically Annotated Corpora</td>  <td class='link'><a href='http://www.aclweb.org/anthology/D/D13/D13-1105.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/D/D13/D13-1105.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Aix-Marseille University<a name='(Team BBN) Aix-Marseille University'></a>, Multimedia, InfoRmation Systems and Advanced Computing Laboratory<a name='Multimedia, InfoRmation Systems and Advanced Computing Laboratory'></a>, Columbia University<a name='Columbia University'></a></td>
+<td class='title'>The Effects of Factorizing Root and Pattern Mapping in Translating between Tunisian Arabic and Standard Arabic</td>  <td class='link'><a href='http://www.mtsummit2013.info/files/proceedings/main/mt-summit-2013-hamdi-et-al.pdf' class='external' target='_blank'>http://www.mtsummit2013.info/files/proceedings/main/mt-summit-2013-hamdi-et-al.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Morphological Analysis and Disambiguation for Dialectal Arabic</td>  <td class='link'><a href='http://www.newdesign.aclweb.org/anthology-new/N/N13/N13-1044.pdf' class='external' target='_blank'>http://www.newdesign.aclweb.org/anthology-new/N/N13/N13-1044.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Automatic Morphological Enrichment of a Morphologically Underspecified Treebank</td>  <td class='link'><a href='http://www.newdesign.aclweb.org/anthology-new/N/N13/N13-1049.pdf' class='external' target='_blank'>http://www.newdesign.aclweb.org/anthology-new/N/N13/N13-1049.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Dialectal Arabic to English Machine Translation: Pivoting through Modern Standard Arabic</td>  <td class='link'><a href='https://www.aclweb.org/anthology/N/N13/N13-1036.pdf' class='external' target='_blank'>https://www.aclweb.org/anthology/N/N13/N13-1036.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Processing Spontaneous Orthography</td>  <td class='link'><a href='http://www.newdesign.aclweb.org/anthology-new/N/N13/N13-1066.pdf' class='external' target='_blank'>http://www.newdesign.aclweb.org/anthology-new/N/N13/N13-1066.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Automatic Correction and Extension of Morphological Annotations</td>  <td class='link'><a href='https://www.aclweb.org/anthology/W/W13/W13-23.pdf#page=17' class='external' target='_blank'>https://www.aclweb.org/anthology/W/W13/W13-23.pdf#page=17</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Elissa: A Dialectal to Standard Arabic Machine Translation System</td>  <td class='link'><a href='http://www.aclweb.org/anthology-new/C/C12/C12-3048.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology-new/C/C12/C12-3048.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Lost and Found in Translation: The Impact of Machine Translated Results on Translingual Information Retrieval</td>  <td class='link'><a href='http://www.mt-archive.info/AMTA-2012-Parton.pdf' class='external' target='_blank'>http://www.mt-archive.info/AMTA-2012-Parton.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Can Automatic Post-Editing Make MT More Meaningful?</td>  <td class='link'><a href='http://www.mt-archive.info/EAMT-2012-Parton.pdf' class='external' target='_blank'>http://www.mt-archive.info/EAMT-2012-Parton.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Identifying Broken Plurals, Irregular Gender, and Rationality in Arabic Text</td>  <td class='link'><a href='http://www.newdesign.aclweb.org/anthology/E/E12/E12-1069.pdf' class='external' target='_blank'>http://www.newdesign.aclweb.org/anthology/E/E12/E12-1069.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>ASMA: A system for Automatic Segmentation and Morpho-syntactic Disambiguation of Modern Standard Arabic</td>  <td class='link'><a href='http://www.seas.gwu.edu/~mtdiab/files/publications/refereed/3.pdf' class='external' target='_blank'>http://www.seas.gwu.edu/~mtdiab/files/publications/refereed/3.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a>, George Washington University<a name='George Washington University'></a></td>
+<td class='title'>Sentence-Level Dialect Identification in Arabic</td>  <td class='link'><a href='http://www.aclweb.org/anthology/P/P13/P13-2081.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/P/P13/P13-2081.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Code-Switch Point Detection in Arabic</td>  <td class='link'><a href='http://link.springer.com/chapter/10.1007/978-3-642-38824-8_51' class='external' target='_blank'>http://link.springer.com/chapter/10.1007/978-3-642-38824-8_51</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Multiword Expressions in the Context of Statistical Machine Translation</td>  <td class='link'><a href='https://www.aclweb.org/anthology/I/I13/I13-1168.pdf' class='external' target='_blank'>https://www.aclweb.org/anthology/I/I13/I13-1168.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>ANEAR: Automatic Named Entity Aliasing Resolution</td>  <td class='link'><a href='http://link.springer.com/chapter/10.1007/978-3-642-38824-8_18' class='external' target='_blank'>http://link.springer.com/chapter/10.1007/978-3-642-38824-8_18</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Building a Lexical Semantic Resource for Arabic Morphological Patterns</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6487254&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6487254' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6487254&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D6487254</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Token Level Identification of Linguistic Code Switching</td>  <td class='link'><a href='http://www1.ccls.columbia.edu/~heba/files/LCS.pdf' class='external' target='_blank'>http://www1.ccls.columbia.edu/~heba/files/LCS.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Simplified Guidelines for the Creation of Large Scale Dialectal Arabic Annotations</td>  <td class='link'><a href='http://www.lrec-conf.org/proceedings/lrec2012/pdf/815_Paper.pdf' class='external' target='_blank'>http://www.lrec-conf.org/proceedings/lrec2012/pdf/815_Paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Building an Arabic Multiword Expressions Repository</td>  <td class='link'><a href='http://aclweb.org/anthology/W/W12/W12-3403.pdf' class='external' target='_blank'>http://aclweb.org/anthology/W/W12/W12-3403.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>A Pilot PropBank Annotation for Quranic Arabic</td>  <td class='link'><a href='http://aclweb.org/anthology//W/W12/W12-2511.pdf' class='external' target='_blank'>http://aclweb.org/anthology//W/W12/W12-2511.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Easy Victories and Uphill Battles in Coreference Resolution</td>  <td class='link'><a href='http://www.eecs.berkeley.edu/~gdurrett/papers/durrett-klein-emnlp2013.pdf' class='external' target='_blank'>http://www.eecs.berkeley.edu/~gdurrett/papers/durrett-klein-emnlp2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Error-Driven Analysis of Challenges in Coreference Resolution</td>  <td class='link'><a href='http://nlp.cs.berkeley.edu/pubs/Kummerfeld-Klein_2013_Analysis_paper.pdf' class='external' target='_blank'>http://nlp.cs.berkeley.edu/pubs/Kummerfeld-Klein_2013_Analysis_paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Decentralized Entity-Level Modeling for Coreference Resolution</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P13/P13-1012.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P13/P13-1012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Training Factored PCFGs with Expectation Propagation</td>  <td class='link'><a href='http://www.cs.berkeley.edu/~dlwh/papers/hall12epic.pdf' class='external' target='_blank'>http://www.cs.berkeley.edu/~dlwh/papers/hall12epic.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Fast Inference in Phrase Extraction Models with Belief Propagation</td>  <td class='link'><a href='http://nlp.cs.berkeley.edu/pubs/Burkett-Klein_2012_BPAlignment_paper.pdf' class='external' target='_blank'>http://nlp.cs.berkeley.edu/pubs/Burkett-Klein_2012_BPAlignment_paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Large-Scale Syntactic Language Modeling with Treelets</td>  <td class='link'><a href='http://nlp.cs.berkeley.edu/pubs/Pauls-Klein_2012_LM_paper.pdf' class='external' target='_blank'>http://nlp.cs.berkeley.edu/pubs/Pauls-Klein_2012_LM_paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Coreference Semantics from Web Features</td>  <td class='link'><a href='http://ttic.uchicago.edu/~mbansal/papers/acl12_corefWeb.pdf' class='external' target='_blank'>http://ttic.uchicago.edu/~mbansal/papers/acl12_corefWeb.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of California - Berkeley<a name='(Team BBN) University of California - Berkeley'></a></td>
+<td class='title'>Transforming Trees to Improve Syntactic Convergence</td>  <td class='link'><a href='http://www.eecs.berkeley.edu/~dburkett/papers/burkett12-tree_transform.pdf' class='external' target='_blank'>http://www.eecs.berkeley.edu/~dburkett/papers/burkett12-tree_transform.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a></td>
+<td class='title'>Simulating Discriminative Training for Linear Mixture Adaptation in Statistical Machine Translation</td>  <td class='link'><a href='http://www.mtsummit2013.info/files/proceedings/main/mt-summit-2013-foster-et-al.pdf' class='external' target='_blank'>http://www.mtsummit2013.info/files/proceedings/main/mt-summit-2013-foster-et-al.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a></td>
+<td class='title'>Vector Space Model for Adaptation in Statistical Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P13/P13-1126.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P13/P13-1126.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a>, University of Maryland<a name='University of Maryland'></a>, University of Chicago<a name='University of Chicago'></a>, Johns Hopkins University<a name='Johns Hopkins University'></a>, IBM<a name='IBM'></a></td>
+<td class='title'>SenseSpotting: Never Let your Parallel Data Tie You to an Old Domain</td>  <td class='link'><a href='http://www.aclweb.org/anthology/P/P13/P13-1141.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/P/P13/P13-1141.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a></td>
+<td class='title'>Improved Reordering for Phrase-Based Translation Using Sparse Features</td>  <td class='link'><a href='http://www.aclweb.org/anthology/N/N13/N13-1003.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/N/N13/N13-1003.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a></td>
+<td class='title'>Adaptation of Reordering Models for Statistical Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology//N/N13/N13-1114.pdf' class='external' target='_blank'>http://aclweb.org/anthology//N/N13/N13-1114.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a></td>
+<td class='title'>A Semantic Evaluation of Machine Translation Lexical Choice</td>  <td class='link'><a href='http://www.aclweb.org/anthology/W/W13/W13-0801.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/W/W13/W13-0801.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) National Research Council<a name='(Team BBN) National Research Council'></a></td>
+<td class='title'>NRC: A Machine Translation Approach to Cross-Lingual Word Sense Disambiguation</td>  <td class='link'><a href='http://www.aclweb.org/anthology/S/S13/S13-2034.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology/S/S13/S13-2034.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>LTG vs. ITG Coverage of Cross-Lingual Verb Frame Alternations</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/AddankiLoSaersWu_Eamt2012.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/AddankiLoSaersWu_Eamt2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Fully Automatic Semantic MT Evaluation</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoTumuluruWu_Wmt2012.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoTumuluruWu_Wmt2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Towards a Predicate-Argument Evaluation for MT</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/BojarWu_Ssst2012.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/BojarWu_Ssst2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Unsupervised vs. Supervised Weight Estimation for Semantic MT Evaluation Metrics</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoWu_Ssst2012.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoWu_Ssst2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Accuracy and Robustness in Measuring the Lexical Similarity of Semantic Role Fillers for Automatic Semantic MT Evaluation</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/TumuluruLoWu_Paclic2012.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/TumuluruLoWu_Paclic2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>From Finite-State to Inversion Transductions: Toward Unsupervised Bilingual Grammar Induction</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Coling2012.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Coling2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Combining Top-down and Bottom-up Search for Unsupervised Induction of Transduction Grammars</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Ssst2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Ssst2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Iterative Rule Segmentation under Minimum Description Length for Unsupervised Transduction Grammar Induction</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Slsp2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Slsp2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>MEANT at WMT 2013: A Tunable, Accurate yet Inexpensive Semantic Frame Based MT Evaluation Metric</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoWu_Wmt2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoWu_Wmt2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Unsupervised Transduction Grammar Induction via Minimum Description Length</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Hytra2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Hytra2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Improving Machine Translation by Training Against an Automatic Semantic Frame Based Evaluation Metric</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoAddankiSaersWu_Acl2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoAddankiSaersWu_Acl2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>FREESTYLE: A Challenge-Response System for Hip Hop Lyrics via Unsupervised Induction of Stochastic Transduction Grammars</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/WuAddankiSaers_Interspeech2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/WuAddankiSaers_Interspeech2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Can Informal Genres be Better Translated by Tuning on Automatic Semantic Metrics?</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoWu_Mtsummit2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/LoWu_Mtsummit2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Modeling Hip Hop Challenge-Response Lyrics as Machine Translation</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/WuAddankiSaers_Mtsummit2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/WuAddankiSaers_Mtsummit2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Segmenting vs. Chunking: Unsupervised ITG Induction via Minimum Conditional Description Length</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Ranlp2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersAddankiWu_Ranlp2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Bayesian Induction of Bracketing Inversion Transduction Grammars</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersWu_Ijcnlp2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/SaersWu_Ijcnlp2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Learning to Freestyle: Hip Hop Challenge-Response Induction via Transduction Rule Segmentation</td>  <td class='link'><a href='http://www.cs.ust.hk/~dekai/library/WU_Dekai/WuAddankiSaersBeloucif_Emnlp2013.pdf' class='external' target='_blank'>http://www.cs.ust.hk/~dekai/library/WU_Dekai/WuAddankiSaersBeloucif_Emnlp2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Why Not Grab a Free Lunch? Mining Large Corpora for Parallel Sentences to Improve Translation Modeling</td>  <td class='link'><a href='http://aclweb.org/anthology/N/N12/N12-1079.pdf' class='external' target='_blank'>http://aclweb.org/anthology/N/N12/N12-1079.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Encouraging Consistent Translation Choices</td>  <td class='link'><a href='http://www.aclweb.org/anthology-new/N/N12/N12-1046.pdf' class='external' target='_blank'>http://www.aclweb.org/anthology-new/N/N12/N12-1046.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Meaning Matching for Cross-Language Information Retrieval</td>  <td class='link'><a href='http://www.sciencedirect.com/science/article/pii/S0306457311000999' class='external' target='_blank'>http://www.sciencedirect.com/science/article/pii/S0306457311000999</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Topic Models for Dynamic Translation Model Adaptation</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P12/P12-2023.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P12/P12-2023.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Looking Inside the Box: Context-Sensitive Translation for Cross-Language Information Retrieval</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2348491' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2348491</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Combining Statistical Translation Techniques for Cross-Language Information Retrieval</td>  <td class='link'><a href='http://www.umiacs.umd.edu/~jimmylin/publications/Ture_etal_COLING2012.pdf' class='external' target='_blank'>http://www.umiacs.umd.edu/~jimmylin/publications/Ture_etal_COLING2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Leveraging Statistical Transliteration for Dictionary-Based English-Bengali CLIR of OCR'd Text</td>  <td class='link'><a href='http://aclweb.org/anthology//C/C12/C12-2034.pdf' class='external' target='_blank'>http://aclweb.org/anthology//C/C12/C12-2034.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Two Algorithms for Finding k Shortest Paths of a Weighted Pushdown Automaton</td>  <td class='link'><a href='http://arxiv.org/pdf/1212.0927.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1212.0927.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a>, Johns Hopkins University<a name='Johns Hopkins University'></a></td>
+<td class='title'>Massively Parallel Suffix Array Queries and On-Demand Phrase Extraction for Statistical Machine Translation Using GPUs</td>  <td class='link'><a href='http://aclweb.org/anthology/N/N13/N13-1033.pdf' class='external' target='_blank'>http://aclweb.org/anthology/N/N13/N13-1033.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Modeling Syntactic and Semantic Structures in Hierarchical Phrase-based Translation</td>  <td class='link'><a href='http://aclweb.org/anthology//N/N13/N13-1060.pdf' class='external' target='_blank'>http://aclweb.org/anthology//N/N13/N13-1060.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Flat vs. Hierarchical Phrase-Based Translation Models for Cross-Language Information Retrieval</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2484137' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2484137</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Sequential Testing in Classifier Evaluation Yields Biased Estimates of Effectiveness</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?doid=2484028.2484159' class='external' target='_blank'>http://dl.acm.org/citation.cfm?doid=2484028.2484159</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Mr. MIRA: Open-Source Large-Margin Structured Learning on MapReduce</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-4034.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-4034.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Online Relative Margin Maximization for Statistical Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-1110.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-1110.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Marginal Matching for Translation Model Adaptation</td>  <td class='link'><a href='http://aclweb.org/anthology//D/D13/D13-1109.pdf' class='external' target='_blank'>http://aclweb.org/anthology//D/D13/D13-1109.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a></td>
+<td class='title'>Simulating Early-Termination Search for Verbose Spoken Queries</td>  <td class='link'><a href='http://aclweb.org/anthology//D/D13/D13-1126.pdf' class='external' target='_blank'>http://aclweb.org/anthology//D/D13/D13-1126.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Maryland<a name='(Team IBM) University of Maryland'></a>, National Research Council Canada<a name='National Research Council Canada'></a>, SDL Research<a name='SDL Research'></a></td>
+<td class='title'>Measuring Machine Translation Errors in New Domains</td>  <td class='link'><a href='http://aclweb.org/anthology//Q/Q13/Q13-1035.pdf' class='external' target='_blank'>http://aclweb.org/anthology//Q/Q13/Q13-1035.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>A Phrase Orientation Model for Hierarchical Machine Translation</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/870/HuckMatthiasWuebkerJoernRietigFelixNeyHermann--APhraseOrientationModelforHierarchicalMachineTranslation--2013.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/870/HuckMatthiasWuebkerJoernRietigFelixNeyHermann--APhraseOrientationModelforHierarchicalMachineTranslation--2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>Length-incremental Phrase Training for SMT</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/871/WuebkerJoernNeyHermann--Length-incrementalPhraseTrainingforSMT--2013.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/871/WuebkerJoernNeyHermann--Length-incrementalPhraseTrainingforSMT--2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>Phrase Training Based Adaptation for Statistical Machine Translation</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/842/MansourSaabNeyHermann--PhraseTrainingBasedAdaptationforStatisticalMachineTranslation--2013.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/842/MansourSaabNeyHermann--PhraseTrainingBasedAdaptationforStatisticalMachineTranslation--2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>A Simple and Effective Weighted Phrase Extraction for Machine Translation Adaptation</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/832/MansourSaabNeyHermann--ASimpleEffectiveWeightedPhraseExtractionforMachineTranslationAdaptation--2012.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/832/MansourSaabNeyHermann--ASimpleEffectiveWeightedPhraseExtractionforMachineTranslationAdaptation--2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>A Performance Study of Cube Pruning for Large-Scale Hierarchical Machine Translation</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/853/HuckMatthiasVilarDavidFreitagMarkusNeyHermann--APerformanceStudyofCubePruningforLarge-ScaleHierarchicalMachineTranslation--2013.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/853/HuckMatthiasVilarDavidFreitagMarkusNeyHermann--APerformanceStudyofCubePruningforLarge-ScaleHierarchicalMachineTranslation--2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>Sequence Labeling-based Reordering Model for Phrase-based SMT</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/834/FengMinweiPeterJan-ThorstenNeyHermann--SequenceLabeling-basedReorderingModelforPhrase-basedSMT--2012.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/834/FengMinweiPeterJan-ThorstenNeyHermann--SequenceLabeling-basedReorderingModelforPhrase-basedSMT--2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>Semantic Cohesion Model for Phrase-Based SMT</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/836/FengMinweiSunWeiweiHermannNey--SemanticCohesionModelforPhrase-BasedSMT--2012.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/836/FengMinweiSunWeiweiHermannNey--SemanticCohesionModelforPhrase-BasedSMT--2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) RWTH Aachen University<a name='(Team IBM) RWTH Aachen University'></a></td>
+<td class='title'>A Tagging-style Reordering Model for Phrase-based SMT</td>  <td class='link'><a href='http://www-i6.informatik.rwth-aachen.de/publications/download/837/FengMinweiNeyHermann--ATagging-styleReorderingModelforPhrase-basedSMT--2012.pdf' class='external' target='_blank'>http://www-i6.informatik.rwth-aachen.de/publications/download/837/FengMinweiNeyHermann--ATagging-styleReorderingModelforPhrase-basedSMT--2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>Flexible and Efficient Hypergraph Interactions for Joint Hierarchical and Forest-to-String Decoding</td>  <td class='link'><a href='http://aclweb.org/anthology//D/D13/D13-1052.pdf' class='external' target='_blank'>http://aclweb.org/anthology//D/D13/D13-1052.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a>, Chinese Academy of Sciences<a name='Chinese Academy of Sciences'></a>, QCCUNY<a name='QCCUNY'></a></td>
+<td class='title'>Violation-Fixing Perceptron and Forced Decoding for Scalable MT Training</td>  <td class='link'><a href='http://aclweb.org/anthology//D/D13/D13-1112.pdf' class='external' target='_blank'>http://aclweb.org/anthology//D/D13/D13-1112.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a>, University of Massachusetts<a name='University of Massachusetts'></a></td>
+<td class='title'>Incorporating Social Anchors for Ad Hoc Retrieval</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-875' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-875</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>Bi-directional Linkability From Wikipedia to Documents and Back Again: UMass at TREC 2012 Knowledge Base Acceleration Track</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-916' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-916</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>A Neighborhood Relevance Model for Entity Linking</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-922' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-922</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>Sentiment Diversification with Different Biases</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-925' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-925</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>Term Level Search Result Diversification</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-929' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-929</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>Extracting Query Facets from Search Results</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-930' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-930</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>Retrieving Opinions from Discussion Forums</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-937' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-937</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Massachusetts<a name='(Team IBM) University of Massachusetts'></a></td>
+<td class='title'>Constructing Query-Specific Knowledge Bases</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/IR-960' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/IR-960</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>Bilingual Word Embeddings for Phrase-Based Machine Translation</td>  <td class='link'><a href='http://ai.stanford.edu/~wzou/emnlp2013_ZouSocherCerManning.pdf' class='external' target='_blank'>http://ai.stanford.edu/~wzou/emnlp2013_ZouSocherCerManning.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>Parsing Models for Identifying Multiword Expressions</td>  <td class='link'><a href='http://www.mitpressjournals.org/doi/pdf/10.1162/COLI_a_00139' class='external' target='_blank'>http://www.mitpressjournals.org/doi/pdf/10.1162/COLI_a_00139</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>Positive Diversity Tuning for Machine Translation System Combination</td>  <td class='link'><a href='http://statmt.org/wmt13/pdf/WMT39.pdf' class='external' target='_blank'>http://statmt.org/wmt13/pdf/WMT39.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>Feature-Rich Phrase-based Translation: Stanford University's Submission to the WMT 2013 Translation Task</td>  <td class='link'><a href='http://statmt.org/wmt13/pdf/WMT17.pdf' class='external' target='_blank'>http://statmt.org/wmt13/pdf/WMT17.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>Fast and Adaptive Online Training of Feature-Rich Translation Models</td>  <td class='link'><a href='http://www.spencegreen.com/pubs/green+wang+cer+manning.acl13.pdf' class='external' target='_blank'>http://www.spencegreen.com/pubs/green+wang+cer+manning.acl13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>The Stanford Post-Editing Corpus: Collection and Analysis</td>  <td class='link'><a href='http://www.spencegreen.com/pubs/green+heer+manning.amta12.pdf' class='external' target='_blank'>http://www.spencegreen.com/pubs/green+heer+manning.amta12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a></td>
+<td class='title'>A Class-Based Agreement Model for Generating Accurately Inflected Translations</td>  <td class='link'><a href='http://www.spencegreen.com/pubs/green+denero.acl12.pdf' class='external' target='_blank'>http://www.spencegreen.com/pubs/green+denero.acl12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) Stanford University<a name='(Team IBM) Stanford University'></a>, Johns Hopkins University<a name='Johns Hopkins University'></a></td>
+<td class='title'>Entity Clustering Across Languages</td>  <td class='link'><a href='http://www.spencegreen.com/pubs/green+andrews+gormley+dredze+manning.naacl12.pdf' class='external' target='_blank'>http://www.spencegreen.com/pubs/green+andrews+gormley+dredze+manning.naacl12.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Le Mans<a name='(Team IBM) University of Le Mans'></a></td>
+<td class='title'>Semi-supervised Transliteration Mining from Parallel and Comparable Corpora</td>  <td class='link'><a href='http://hltc.cs.ust.hk/iwslt/proceedings/paper_7.pdf' class='external' target='_blank'>http://hltc.cs.ust.hk/iwslt/proceedings/paper_7.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Le Mans<a name='(Team IBM) University of Le Mans'></a></td>
+<td class='title'>Phrase Probabilities Calculation for Statistical Machine Translation by using Belief Functions</td>  <td class='link'><a href='http://aclweb.org/anthology//C/C12/C12-2107.pdf' class='external' target='_blank'>http://aclweb.org/anthology//C/C12/C12-2107.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Le Mans<a name='(Team IBM) University of Le Mans'></a></td>
+<td class='title'>Continuous Space Translation Models for Phrase-Based Statistical Machine Translation</td>  <td class='link'><a href='http://aclweb.org/anthology//C/C12/C12-2104.pdf' class='external' target='_blank'>http://aclweb.org/anthology//C/C12/C12-2104.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team IBM) University of Le Mans<a name='(Team IBM) University of Le Mans'></a></td>
+<td class='title'>CSLM - A modular Open-Source Continuous Space Language Modeling Toolkit</td>  <td class='link'><a href='http://www-lium.univ-lemans.fr/~schwenk/papers/Schwenk.cslm.is2013.pdf' class='external' target='_blank'>http://www-lium.univ-lemans.fr/~schwenk/papers/Schwenk.cslm.is2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>LDC<a name='LDC'></a></td>
+<td class='title'>Expanding Arabic Treebank to Speech: Results from Broadcast News</td>  <td class='link'><a href='https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-expanding-arabic-treebank.pdf' class='external' target='_blank'>https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-expanding-arabic-treebank.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Conventional Orthography for Dialectal Arabic</td>  <td class='link'><a href='http://www.lrec-conf.org/proceedings/lrec2012/pdf/579_Paper.pdf' class='external' target='_blank'>http://www.lrec-conf.org/proceedings/lrec2012/pdf/579_Paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>A Morphological Analyzer for Egyptian Arabic</td>  <td class='link'><a href='http://aclweb.org/anthology//W/W12/W12-2301.pdf' class='external' target='_blank'>http://aclweb.org/anthology//W/W12/W12-2301.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team LDC) Brandeis University<a name='(Team LDC) Brandeis University'></a></td>
+<td class='title'>Extending and Scaling up the Chinese Treebank Annotation</td>  <td class='link'><a href='http://aclweb.org/anthology/W/W12/W12-6306.pdf' class='external' target='_blank'>http://aclweb.org/anthology/W/W12/W12-6306.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team LDC) Brandeis University<a name='(Team LDC) Brandeis University'></a></td>
+<td class='title'>Building a Chinese Lexical Taxonomy</td>  <td class='link'><a href='http://aclweb.org/anthology/W/W12/W12-6305.pdf' class='external' target='_blank'>http://aclweb.org/anthology/W/W12/W12-6305.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team LDC) Brandeis University<a name='(Team LDC) Brandeis University'></a></td>
+<td class='title'>A Lattice-Based Framework for Joint Chinese Word Segmentation, POS-Tagging and Parsing</td>  <td class='link'><a href='http://aclweb.org/anthology/P/P13/P13-2110.pdf' class='external' target='_blank'>http://aclweb.org/anthology/P/P13/P13-2110.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team LDC) University of Colorado<a name='(Team LDC) University of Colorado'></a></td>
+<td class='title'>Renewing and Revising SemLink</td>  <td class='link'><a href='http://aclweb.org/anthology/W/W13/W13-5503.pdf' class='external' target='_blank'>http://aclweb.org/anthology/W/W13/W13-5503.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>SDL<a name='SDL'></a></td>
+<td class='title'>HyTER: Meaning-Equivalent Semantics for Translation Evaluation</td>  <td class='link'><a href='http://www.aclweb.org/anthology/N12-1017' class='external' target='_blank'>http://www.aclweb.org/anthology/N12-1017</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>AIDA: Automatic Identification & Glossing of Dialectal Arabic</td>  <td class='link'><a href='http://hltshare.fbk.eu/EAMT2012/html/Papers/17.pdf' class='external' target='_blank'>http://hltshare.fbk.eu/EAMT2012/html/Papers/17.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Columbia University<a name='(Team BBN) Columbia University'></a></td>
+<td class='title'>Learning to Automatically Post-Edit Dropped Words in MT</td>  <td class='link'><a href='http://amta2012.amtaweb.org/AMTA2012Files/html/14/14_paper.pdf' class='external' target='_blank'>http://amta2012.amtaweb.org/AMTA2012Files/html/14/14_paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>Freeform Text Summarization in Social Sensing</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2185718&dl=ACM&coll=DL&CFID=375735782&CFTOKEN=22073682' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2185718&dl=ACM&coll=DL&CFID=375735782&CFTOKEN=22073682</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team LDC) QCCUNY<a name='(Team LDC) QCCUNY'></a></td>
+<td class='title'>Linguistic Resources for Entity Linking Evaluation: from Mono-lingual to Cross-lingual</td>  <td class='link'><a href='http://www.lrec-conf.org/proceedings/lrec2012/pdf/278_Paper.pdf' class='external' target='_blank'>http://www.lrec-conf.org/proceedings/lrec2012/pdf/278_Paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CUNY<a name='CUNY'></a></td>
+<td class='title'>Combining Flat and Structured Approaches for Temporal Slot Filling or: How Much to Compress?</td>  <td class='link'><a href='http://link.springer.com/chapter/10.1007%2F978-3-642-28601-8_17#page-1' class='external' target='_blank'>http://link.springer.com/chapter/10.1007%2F978-3-642-28601-8_17#page-1</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) QCCUNY<a name='(Team SRI) QCCUNY'></a>, University of Illinois - Urbana-Champaign<a name='University of Illinois - Urbana-Champaign'></a></td>
+<td class='title'>Analysis and Refinement of Cross-lingual Entity Linking</td>  <td class='link'><a href='http://nlp.cs.rpi.edu/paper/clef2012.pdf' class='external' target='_blank'>http://nlp.cs.rpi.edu/paper/clef2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>Uncertainty Reduction for Knowledge Discovery and Information Extraction on WWW</td>  <td class='link'><a href='http://nlp.cs.rpi.edu/paper/kdie.pdf' class='external' target='_blank'>http://nlp.cs.rpi.edu/paper/kdie.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>Relabeling Distantly Supervised Training Data for Temporal Knowledge Base Population</td>  <td class='link'><a href='http://aclweb.org/anthology//W/W12/W12-3005.pdf' class='external' target='_blank'>http://aclweb.org/anthology//W/W12/W12-3005.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>CUNY_BLENDER TAC-KBP2012 Entity Linking System and Slot Filling Validation System</td>  <td class='link'><a href='http://www.nist.gov/tac/publications/2012/participant.papers/Blender_CUNY.proceedings.pdf' class='external' target='_blank'>http://www.nist.gov/tac/publications/2012/participant.papers/Blender_CUNY.proceedings.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>Combining Social Cognitive Theories with Linguistic Features for Multi-genre Sentiment Analysis</td>  <td class='link'><a href='http://aclweb.org/anthology/Y/Y12/Y12-1013.pdf' class='external' target='_blank'>http://aclweb.org/anthology/Y/Y12/Y12-1013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>Name-aware Machine Translation</td>  <td class='link'><a href='http://nlp.cs.rpi.edu/paper/namemt.pdf' class='external' target='_blank'>http://nlp.cs.rpi.edu/paper/namemt.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CUNY<a name='(Team BBN) CUNY'></a></td>
+<td class='title'>Joint Bilingual Name Tagging for Parallel Corpora</td>  <td class='link'><a href='http://nlp.cs.rpi.edu/paper/jointname_cikm2012.pdf' class='external' target='_blank'>http://nlp.cs.rpi.edu/paper/jointname_cikm2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) OHSU<a name='(Team BBN) OHSU'></a></td>
+<td class='title'>Robust Kaomoji Detection in Twitter</td>  <td class='link'><a href='http://aclweb.org/anthology//W/W12/W12-2107.pdf' class='external' target='_blank'>http://aclweb.org/anthology//W/W12/W12-2107.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Washington<a name='(Team SRI) University of Washington'></a></td>
+<td class='title'>Semi-supervised learning for text classification using feature affinity regularization</td>  <td class='link'><a href='http://www.ttic.edu/sigml/symposium2012/papers/zhang_mlslp2012.pdf' class='external' target='_blank'>http://www.ttic.edu/sigml/symposium2012/papers/zhang_mlslp2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Massachusetts<a name='(Team SRI) University of Massachusetts'></a></td>
+<td class='title'>Passage-level Evidence for Cross-Language Information Retrieval</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/getpdf.php?id=1076' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/getpdf.php?id=1076</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Massachusetts<a name='(Team SRI) University of Massachusetts'></a></td>
+<td class='title'>Across-Document Neighborhood Expansion: UMass at TAC KBP 2012 Entity Linking</td>  <td class='link'><a href='http://ciir.cs.umass.edu/~dietz/entitylinking/tac-notebook.pdf' class='external' target='_blank'>http://ciir.cs.umass.edu/~dietz/entitylinking/tac-notebook.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Massachusetts<a name='(Team SRI) University of Massachusetts'></a></td>
+<td class='title'>Incorporating Social Anchors for Ad Hoc Retrieval</td>  <td class='link'><a href='http://ciir-publications.cs.umass.edu/getpdf.php?id=1040' class='external' target='_blank'>http://ciir-publications.cs.umass.edu/getpdf.php?id=1040</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Massachusetts<a name='(Team SRI) University of Massachusetts'></a></td>
+<td class='title'>A Neighborhood Relevance Model for Entity Linking</td>  <td class='link'><a href='http://ciir.cs.umass.edu/~dietz/entitylinking/oair2013.pdf' class='external' target='_blank'>http://ciir.cs.umass.edu/~dietz/entitylinking/oair2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>Sentence Dependency Tagging in Online Question Answering Forums</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P12/P12-1058.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P12/P12-1058.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>Sequence Labeling with Non-Negative Weighted Higher Order Features</td>  <td class='link'><a href='http://www.aaai.org/ocs/index.php/AAAI/AAAI12/paper/view/4902/5527' class='external' target='_blank'>http://www.aaai.org/ocs/index.php/AAAI/AAAI12/paper/view/4902/5527</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>A Two-step Approach to Sentence Compression of Spoken Utterances</td>  <td class='link'><a href='http://aclweb.org/anthology//P/P12/P12-2033.pdf' class='external' target='_blank'>http://aclweb.org/anthology//P/P12/P12-2033.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>Normalization of Text Messages for Text-to-Speech</td>  <td class='link'><a href='http://www.cslu.ogi.edu/~sproatr/Courses/TextNorm/Papers/liu.pdf' class='external' target='_blank'>http://www.cslu.ogi.edu/~sproatr/Courses/TextNorm/Papers/liu.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>Joint Chinese Word Segmentation, POS Tagging and Parsing</td>  <td class='link'><a href='http://aclweb.org/anthology//D/D12/D12-1046.pdf' class='external' target='_blank'>http://aclweb.org/anthology//D/D12/D12-1046.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>Evaluating the effect of normalizing informal text on TTS output</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424271&url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel5%2F6416134%2F6424159%2F06424271.pdf%3Farnumber=6424271' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424271&url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel5%2F6416134%2F6424159%2F06424271.pdf%3Farnumber=6424271</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Texas - Dallas<a name='(Team SRI) University of Texas - Dallas'></a></td>
+<td class='title'>Improving Text Normalization Using Character-blocks based Models and System Combination</td>  <td class='link'><a href='http://aclweb.org/anthology//C/C12/C12-1097.pdf' class='external' target='_blank'>http://aclweb.org/anthology//C/C12/C12-1097.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) CMU<a name='(Team BBN) CMU'></a>, University of Edinburgh<a name='University of Edinburgh'></a></td>
+<td class='title'>Language Model Rest Costs and Space-Efficient Storage</td>  <td class='link'><a href='http://kheafield.com/professional/edinburgh/rest_paper.pdf' class='external' target='_blank'>http://kheafield.com/professional/edinburgh/rest_paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Cambridge<a name='University of Cambridge'></a></td>
+<td class='title'>Extending Hiero Decoding in Moses with Cube Growing</td>  <td class='link'><a href='http://ufal.mff.cuni.cz/pbml/98/art-xu-koehn.pdf' class='external' target='_blank'>http://ufal.mff.cuni.cz/pbml/98/art-xu-koehn.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) Hong Kong University of Science and Technology<a name='(Team BBN) Hong Kong University of Science and Technology'></a></td>
+<td class='title'>Unsupervised vs. Supervised Weight Estimation for Semantic MT Evaluation Metrics</td>  <td class='link'><a href='http://www.eu-bridge.eu/downloads/Unsupervised_vs._supervised_weight_estimation_for_semantic_MT_evaluation_metrics.pdf' class='external' target='_blank'>http://www.eu-bridge.eu/downloads/Unsupervised_vs._supervised_weight_estimation_for_semantic_MT_evaluation_metrics.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) Aix-Marseille University<a name='(Team SRI) Aix-Marseille University'></a></td>
+<td class='title'>ASR Error Segment Localization for Spoken Recovery Strategy</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6638986' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6638986</a></td>
+</tr>
+<tr>
+  <td class='team'>SRI<a name='SRI'></a></td>
+<td class='title'>Can You Give Me Another Word for Hyperbaric?: Improving Speech Translation Using Targeted Clarification Questions</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639302' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6639302</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of Rochester<a name='(Team BBN) University of Rochester'></a></td>
+<td class='title'>SALL-E: A Situated Agent for Language Learning</td>  <td class='link'><a href='http://www.aaai.org/ocs/index.php/AAAI/AAAI13/paper/view/6436/6869' class='external' target='_blank'>http://www.aaai.org/ocs/index.php/AAAI/AAAI13/paper/view/6436/6869</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team BBN) University of Rochester<a name='(Team BBN) University of Rochester'></a></td>
+<td class='title'>Automatically Deriving Event Ontologies for a CommonSense Knowledge Base</td>  <td class='link'><a href='http://aclweb.org/anthology//W/W13/W13-0103.pdf' class='external' target='_blank'>http://aclweb.org/anthology//W/W13/W13-0103.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) University of Washington<a name='(Team SRI) University of Washington'></a></td>
+<td class='title'>Using Syntactic and Confusion Network Structure for Out-of-vocabulary Word Detection</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424215&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber=6424215' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424215&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber=6424215</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) Columbia University<a name='(Team SRI) Columbia University'></a></td>
+<td class='title'>Localized Detection of Speech Recognition Errors</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424164&url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel5%2F6416134%2F6424159%2F06424164.pdf%3Farnumber=6424164' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=6424164&url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel5%2F6416134%2F6424159%2F06424164.pdf%3Farnumber=6424164</a></td>
+</tr>
+<tr>
+  <td class='team'>(Team SRI) Columbia University<a name='(Team SRI) Columbia University'></a></td>
+<td class='title'>Clarification Questions with Feedback</td>  <td class='link'><a href='http://www.cs.columbia.edu/speech/PaperFiles/2012/ClarifQuestionsFeedback-final-fixmargin.pdf' class='external' target='_blank'>http://www.cs.columbia.edu/speech/PaperFiles/2012/ClarifQuestionsFeedback-final-fixmargin.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>LDC<a name='LDC'></a></td>
+<td class='title'>Annotation Trees: LDC's Customizable, Extensible, Scalable Annotation Infrastructure</td>  <td class='link'><a href='https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-annotation-trees.pdf' class='external' target='_blank'>https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/lrec2012-annotation-trees.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Kneser-Ney Smoothing on Expected Counts</td>  <td class='link'><a href='http://www3.nd.edu/~dchiang/papers/zhang-acl14.pdf' class='external' target='_blank'>http://www3.nd.edu/~dchiang/papers/zhang-acl14.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Decoding with Large-Scale Neural Language Models Improves Translation</td>  <td class='link'><a href='http://www3.nd.edu/~dchiang/papers/vaswani-emnlp13.pdf' class='external' target='_blank'>http://www3.nd.edu/~dchiang/papers/vaswani-emnlp13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Automatic Transliteration of Romanized Dialectal Arabic</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Sentence Level Dialect Identification for Machine Translation System Selection</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>A Multidialectal Parallel Corpus of Arabic</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Tharwa: A Large Scale Dialectal Arabic - Standard Arabic - English Lexicon</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Developing an Egyptian Arabic Treebank: Impact of Dialectal Morphology on Annotation and Tool Development</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>A Conventional Orthography for Tunisian Arabic</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>MADAMIRA: A Fast, Comprehensive Tool for Morphological Analysis and Disambiguation of Arabic</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Classification of Clean and Noisy Bilingual Movie Audio for Speech-to-Speech Translation Corpora Design</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Fusion of Diverse Denoising Systems for Robust Automatic Speech Recognition</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Training Ensemble of Diverse Classifiers on Feature Subsets</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Toward Transfer of Acoustic Cues of Emphasis Across Languages</td>  <td class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/618' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/618</a></td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Empirical Link Between Hypothesis Diversity and Fusion Performance in an Ensemble of Automatic Speech Recognition Systems</td>  <td class='link'><a href='http://sail.usc.edu/aigaion2/index.php/attachments/single/637' class='external' target='_blank'>http://sail.usc.edu/aigaion2/index.php/attachments/single/637</a></td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Fast and Robust Neural Network Joint Models for Statistical Machine Translation</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Lightly-Supervised Word Sense Translation Error Detection for an Interactive Conversational Spoken Language Translation System</td>  <td class='link'><a href='http://aclweb.org/anthology//E/E14/E14-4011.pdf' class='external' target='_blank'>http://aclweb.org/anthology//E/E14/E14-4011.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'><a name=''></a></td>
+<td class='title'>Source-Error Aware Phrase-Based Decoding for Robust Conversational Spoken Language Translation</td>  <td class='link'><a href='http://workshop2013.iwslt.org/downloads/SourceError_Aware_PhraseBased_Decoding_for_Robust_Conversational_Spoken_Language_Translation.pdf' class='external' target='_blank'>http://workshop2013.iwslt.org/downloads/SourceError_Aware_PhraseBased_Decoding_for_Robust_Conversational_Spoken_Language_Translation.pdf</a></td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Поиск' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Очистить</button><div id='sftwrTable'><h2>Программное обеспечение</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Публикации</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
