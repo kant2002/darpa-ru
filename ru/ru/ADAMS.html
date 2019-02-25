@@ -1,0 +1,885 @@
+
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - открытый каталог</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Назад</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/anomaly-detection-at-multiple-scales' class='programlink'>Anomaly Detection at Multiple Scales (ADAMS)</a></h2>
+<div class='left-paragraph'><p>The Anomaly Detection at Multiple Scales (ADAMS) program seeks to create, adapt and apply technology to anomaly characterization and detection in massive data sets. Anomalies in data cue the collection of additional, actionable information in a wide variety of real world contexts.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/dr-angelos-keromytis' class='programmanagerlink'>Dr. Angelos Keromytis</a></p><p>Contact: <a href='mailto:angelos.keromytis@darpa.mil'>angelos.keromytis@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>В таблице публикаций содержится автор(ы), заголовок и ссылки на материалы, проверенные сверками, связанные с конкретными программами DARPA.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs1'>Публикации</a></li></ul><div id='publications'><div id='tabs1'><input class='search' placeholder='Поиск' id='search1'/><button class='clear_button' id='clear1'>Очистить</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Название</th><th>Ссылка</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Modeling Attrition in Organizations From Email Communication</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6693349&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6693349&tag=1</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>A Comparison Study of User Behavior on Facebook and Gmail</td>  <td class='link'><a href='http://dx.doi.org/10.1016/j.chb.2013.06.043' class='external' target='_blank'>http://dx.doi.org/10.1016/j.chb.2013.06.043</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Predicting Group Stability in Online Social Networks</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2488477' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2488477</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Multi- Domain Information Fusion for Insider Threat Detection</td>  <td class='link'><a href='http://www.computer.org/csdl/proceedings/spw/2013/5017/00/5017a045-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/proceedings/spw/2013/5017/00/5017a045-abs.html</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>A Bayesian Network Model for Predicting Insider Threats</td>  <td class='link'><a href='http://www.computer.org/csdl/proceedings/spw/2013/5017/00/5017a082-abs.html' class='external' target='_blank'>http://www.computer.org/csdl/proceedings/spw/2013/5017/00/5017a082-abs.html</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Characterizing User Behavior and Information Propagation on a Social Multimedia Network</td>  <td class='link'><a href='http://arxiv.org/abs/1305.2091' class='external' target='_blank'>http://arxiv.org/abs/1305.2091</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Understanding Email Writers: Personality Prediction from Email Messages</td>  <td class='link'><a href='http://rd.springer.com/chapter/10.1007%2F978-3-642-38844-6_29' class='external' target='_blank'>http://rd.springer.com/chapter/10.1007%2F978-3-642-38844-6_29</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Inferring Personality of Online Gamers by Fusing Multiple-View Predictions</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2358991' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2358991</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Modeling Destructive Group Dynamics in On-line Gaming Communities</td>  <td class='link'><a href='http://www.aaai.org/ocs/index.php/ICWSM/ICWSM12/paper/view/4602' class='external' target='_blank'>http://www.aaai.org/ocs/index.php/ICWSM/ICWSM12/paper/view/4602</a></td>
+</tr>
+<tr>
+  <td class='team'>Palo Alto Research Center<a name='Palo Alto Research Center'></a></td>
+<td class='title'>Proactive Insider Threat Detection through Graph Learning and Psychological Context</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6227698' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6227698</a></td>
+</tr>
+<tr>
+  <td class='team'>CERT<a name='CERT'></a></td>
+<td class='title'>Bridging the Gap: A Pragmatic Approach to Generating Insider Threat Data</td>  <td class='link'><a href='http://www.ieee-security.org/TC/SPW2013/papers/data/5017a098.pdf' class='external' target='_blank'>http://www.ieee-security.org/TC/SPW2013/papers/data/5017a098.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>OPAvion: Mining and Visualization in Large Graphs</td>  <td class='link'><a href='http://www.cs.cmu.edu/afs/cs/Web/People/lakoglu/pubs/sigmod12demo-opavion.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/afs/cs/Web/People/lakoglu/pubs/sigmod12demo-opavion.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Opinion Fraud Detection in Online Reviews by Network Effects</td>  <td class='link'><a href='http://www.cs.stonybrook.edu/~leman/pubs/13-icwsm-fake.pdf' class='external' target='_blank'>http://www.cs.stonybrook.edu/~leman/pubs/13-icwsm-fake.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Mining Connection Pathways for Marked Nodes in Large Graphs</td>  <td class='link'><a href='http://knowledgecenter.siam.org/89SDM/89SDM/1' class='external' target='_blank'>http://knowledgecenter.siam.org/89SDM/89SDM/1</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Com2: Fast Automatic Discovery of Temporal (Comet) Communities</td>  <td class='link'><a href='http://www.cs.cmu.edu/~./epapalex/papers/com2_PAKDD14.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~./epapalex/papers/com2_PAKDD14.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Agglomerative Clustering of Bagged Data using Joint Distributions</td>  <td class='link'><a href='https://kdl.cs.umass.edu/papers/arbour-et-al-slg2013.pdf' class='external' target='_blank'>https://kdl.cs.umass.edu/papers/arbour-et-al-slg2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>A Scalable Approach to Size-Independent Network Similarity</td>  <td class='link'><a href='http://snap.stanford.edu/social2012/papers/berlingerio-koutra-etal.pdf' class='external' target='_blank'>http://snap.stanford.edu/social2012/papers/berlingerio-koutra-etal.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>NetSimile: A Scalable Approach to Size-Independent Network Similarity</td>  <td class='link'><a href='http://arxiv.org/pdf/1209.2684v1.pdf' class='external' target='_blank'>http://arxiv.org/pdf/1209.2684v1.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Augmenting Bag-of-Words: Data-Driven Discovery of Temporal and Structural Information for Activity Recognition</td>  <td class='link'><a href='http://www.cc.gatech.edu/cpl/projects/abow' class='external' target='_blank'>http://www.cc.gatech.edu/cpl/projects/abow</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Data Mining Meets HCI: Making Sense of Large Graphs</td>  <td class='link'><a href='http://www.cs.cmu.edu/~dchau/thesis/polo_thesis.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~dchau/thesis/polo_thesis.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Case Study on Fraud Detection using Social Network Analysis</td>  <td class='link'><a href='http://www.springer.com/computer/communication+networks/book/978-1-4614-6169-2' class='external' target='_blank'>http://www.springer.com/computer/communication+networks/book/978-1-4614-6169-2</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>STINGER: High Performance Data Structure for Streaming Graphs</td>  <td class='link'><a href='http://www.cc.gatech.edu/~bader/papers/STINGER-HPEC2012.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~bader/papers/STINGER-HPEC2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Systematic Construction of Anomaly Detection Benchmarks from Real Data</td>  <td class='link'><a href='http://dl.acm.org/citation.cfm?id=2500858' class='external' target='_blank'>http://dl.acm.org/citation.cfm?id=2500858</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Do More Views of a Graph Help? Community Detection and Clustering in Multi-Graphs</td>  <td class='link'><a href='http://www.cs.cmu.edu/~epapalex/papers/fusion2013.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~epapalex/papers/fusion2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Classifier-Adjusted Density Estimation for Anomaly Detection and One-Class Classification</td>  <td class='link'><a href='http://people.cs.umass.edu/~lfriedl/pubs/SDM2014-paper.pdf' class='external' target='_blank'>http://people.cs.umass.edu/~lfriedl/pubs/SDM2014-paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Copy or Coincidence? A Model for Detecting Social Influence and Duplication Events</td>  <td class='link'><a href='http://jmlr.org/proceedings/papers/v28/friedland13.pdf' class='external' target='_blank'>http://jmlr.org/proceedings/papers/v28/friedland13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>A Fast Algorithm for Streaming Betweenness Centrality</td>  <td class='link'><a href='http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.307.7616&rep=rep1&type=pdf' class='external' target='_blank'>http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.307.7616&rep=rep1&type=pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Load Balanced Clustering Coefficients</td>  <td class='link'><a href='http://www.cc.gatech.edu/grads/o/ogreen3/_docs/2014LoadBalancecClusteringCoefficients.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/grads/o/ogreen3/_docs/2014LoadBalancecClusteringCoefficients.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Faster Betweenness Centrality Based on Data Structure Experimentation</td>  <td class='link'><a href='http://www.sciencedirect.com/science/article/pii/S1877050913003463' class='external' target='_blank'>http://www.sciencedirect.com/science/article/pii/S1877050913003463</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Parallel Approximate Betweenness Centrality for Dynamic Graphs</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Faster Clustering Coefficient Using Vertex Covers</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6693348' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6693348</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Robust Multivariate Autoregression for Anomaly Detection in Dynamic Product Ratings</td>  <td class='link'><a href='http://www.cs.cmu.edu/~sguennem/publications/WWW2014.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~sguennem/publications/WWW2014.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Net-Ray: Visualizing and Mining Billion-Scale Graphs</td>  <td class='link'><a href='https://www.andrew.cmu.edu/user/jaylee/paper/NetRay-PAKDD14.pdf' class='external' target='_blank'>https://www.andrew.cmu.edu/user/jaylee/paper/NetRay-PAKDD14.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>VoG: Summarizing and Understanding Large Graphs</td>  <td class='link'><a href='http://www.cs.cmu.edu/~dkoutra/papers/VoG.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~dkoutra/papers/VoG.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>TENSORSPLAT: Spotting Latent Anomalies in Time</td>  <td class='link'><a href='http://www.cs.cmu.edu/~dkoutra/papers/PCI2012.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~dkoutra/papers/PCI2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Patterns amongst Competing Task Frequencies: Super-Linearities, and the Almond-DG Model</td>  <td class='link'><a href='http://www.cs.cmu.edu/~badityap/papers/competing-tasks-pakdd13.pdf' class='external' target='_blank'>http://www.cs.cmu.edu/~badityap/papers/competing-tasks-pakdd13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>DELTACON: A Principled Massive-Graph Similarity Function</td>  <td class='link'><a href='http://knowledgecenter.siam.org/105SDM/105SDM/1' class='external' target='_blank'>http://knowledgecenter.siam.org/105SDM/105SDM/1</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Fast Outlier Detection Despite the Duplicates</td>  <td class='link'><a href='http://www2013.wwwconference.org/companion/p195.pdf' class='external' target='_blank'>http://www2013.wwwconference.org/companion/p195.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Influence Propagation: Patterns, Model and a Case Study</td>  <td class='link'><a href='https://www.andrew.cmu.edu/user/jaylee/paper/poly-PAKDD14.pdf' class='external' target='_blank'>https://www.andrew.cmu.edu/user/jaylee/paper/poly-PAKDD14.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Demonstrating Interactive Multi-resolution Large Graph Exploration</td>  <td class='link'><a href='http://www.cc.gatech.edu/~dchau/bubblenet/bubblenet_icdm2013.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~dchau/bubblenet/bubblenet_icdm2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Interactive Multi-resolution Exploration of Million Node Graphs</td>  <td class='link'><a href='http://www.cc.gatech.edu/~dchau/bubblenet/bubblenet_visweek13poster.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~dchau/bubblenet/bubblenet_visweek13poster.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Leveraging Memory Mapping for Fast and Scalable Graph Computation on a PC</td>  <td class='link'><a href='http://www.cc.gatech.edu/~dchau/mmap/bigdata13_mmap.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~dchau/mmap/bigdata13_mmap.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Scalable, Minimalist Graph Computation on a PC via Memory Mapping</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Using Blocking to Learn Causal Relational Models in the Presence of Latent Variables</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>A Sound and Complete Algorithm for Learning Causal Models from Relational Data</td>  <td class='link'><a href='http://auai.org/uai2013/prints/papers/197.pdf' class='external' target='_blank'>http://auai.org/uai2013/prints/papers/197.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Reasoning about Independence in Probabilistic Models of Relational Data</td>  <td class='link'><a href='http://www.statslab.cam.ac.uk/~rje42/uai13/Maier1.pdf' class='external' target='_blank'>http://www.statslab.cam.ac.uk/~rje42/uai13/Maier1.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Layered Behavioral Trace Modeling for Threat Detection</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6578813&tag=1' class='external' target='_blank'>http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6578813&tag=1</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>A New Parallel Algorithm for Connected Components in Dynamic Graphs</td>  <td class='link'><a href='http://www.cc.gatech.edu/grads/o/ogreen3/_docs/2013DynamicConnectedComponents.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/grads/o/ogreen3/_docs/2013DynamicConnectedComponents.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Context-Aware Insider Threat Detection</td>  <td class='link'><a href='http://www.aaai.org/ocs/index.php/WS/AAAIW13/paper/download/7315/6444' class='external' target='_blank'>http://www.aaai.org/ocs/index.php/WS/AAAIW13/paper/download/7315/6444</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Detecting Insider Threats in a Real Corporate Database of Computer Usage Activity</td>  <td class='link'><a href='http://www.cc.gatech.edu/~bader/papers/PRODIGAL-KDD2013.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~bader/papers/PRODIGAL-KDD2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Fast and Accurate k-means for Large Datasets</td>  <td class='link'><a href='http://books.nips.cc/papers/files/nips24/NIPS2011_1271.pdf' class='external' target='_blank'>http://books.nips.cc/papers/files/nips24/NIPS2011_1271.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>GLOs:  Graph-Level Operations for Exploratory Network Visualization</td>  <td class='link'><a href='http://www.cc.gatech.edu/~dchau/glo/glo_chi2014.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~dchau/glo/glo_chi2014.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Inside Insider Trading: Patterns & Discoveries from a Large Scale Exploratory Analysis</td>  <td class='link'><a href='http://www.cc.gatech.edu/~dchau/insider/asonam13_insider.pdf' class='external' target='_blank'>http://www.cc.gatech.edu/~dchau/insider/asonam13_insider.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Exploring Large Scale Insider Trading Data: Network Patterns & Discoveries</td>  <td class='link'><a href='http://www.cc.gatech.edu/~dchau/' class='external' target='_blank'>http://www.cc.gatech.edu/~dchau/</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Guiding Scientific Discovery with Explanations Using DEMUD</td>  <td class='link'><a href='http://www.aaai.org/ocs/index.php/AAAI/AAAI13/paper/view/6171/7296' class='external' target='_blank'>http://www.aaai.org/ocs/index.php/AAAI/AAAI13/paper/view/6171/7296</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Use of Domain Knowledge to Detect Insider Threats in Computer Activities</td>  <td class='link'><a href='http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6565230' class='external' target='_blank'>http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6565230</a></td>
+</tr>
+<tr>
+  <td class='team'>Leidos (formerly SAIC)<a name='Leidos (formerly SAIC)'></a></td>
+<td class='title'>Detecting Unknown Insider Threat Scenarios</td>  <td class='link'><a href='http://www.ieee-security.org/TC/SPW2014/papers/5103a277.PDF' class='external' target='_blank'>http://www.ieee-security.org/TC/SPW2014/papers/5103a277.PDF</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>Measuring the Sensitivity of Graph Metrics to Missing Data</td>  <td class='link'><a href='http://link.springer.com/chapter/10.1007/978-3-642-55224-3_73' class='external' target='_blank'>http://link.springer.com/chapter/10.1007/978-3-642-55224-3_73</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>Non-negative Residual Matrix Factorization: Problem Definition, Fast Solutions, and Applications</td>  <td class='link'><a href='https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/f7897306-c5bb-4de8-8432-28bebb5044cf/media/Non_negative' class='external' target='_blank'>https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/f7897306-c5bb-4de8-8432-28bebb5044cf/media/Non_negative</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>PICS: Parameter-free Identification of Cohesive Subgroups in Large Attributed Graphs</td>  <td class='link'><a href='https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/6637ab6a-1be6-4b17-a3e6-a9e97ad4f3b7/media/PICS_Parameter-free' class='external' target='_blank'>https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/6637ab6a-1be6-4b17-a3e6-a9e97ad4f3b7/media/PICS_Parameter-free</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>Fast and Reliable Anomaly Detection in Categorical Data</td>  <td class='link'><a href='https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/6df381c0-774f-45a2-81f6-ec200a4816c7/media/Fast' class='external' target='_blank'>https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/6df381c0-774f-45a2-81f6-ec200a4816c7/media/Fast</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>One-Class Conditional Random Fields for Sequential Anomaly Detection</td>  <td class='link'><a href='https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/9a35be35-b017-4d6d-84c7-a70bd5b22a59/media/One-Class' class='external' target='_blank'>https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/9a35be35-b017-4d6d-84c7-a70bd5b22a59/media/One-Class</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>Adaptive Multi-task Sparse Learning with an Application to fMRI Study</td>  <td class='link'><a href='https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/4f0af234-acdd-4fcc-876f-c15ca7d732a5/media/Adaptive' class='external' target='_blank'>https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/4f0af234-acdd-4fcc-876f-c15ca7d732a5/media/Adaptive</a></td>
+</tr>
+<tr>
+  <td class='team'>IBM<a name='IBM'></a></td>
+<td class='title'>Generating Balanced Classifier-independent Training Samples from Unlabeled Data</td>  <td class='link'><a href='https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/d45cce4a-0a90-4a97-a5a6-9c55920302ce/media/Generating' class='external' target='_blank'>https://greenhouse.lotus.com/wikis/form/api/wiki/6ff67263-8e70-48cc-a58a-f9c4d6c7c03f/page/44909eb8-d379-4a32-a35e-3f49a92149f2/attachment/d45cce4a-0a90-4a97-a5a6-9c55920302ce/media/Generating</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Bait and Snitch: Defending Computer Systems with Decoys</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/ssi.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/ssi.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Fog Computing: Mitigating Insider Data Theft Attacks in the Cloud</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/Fog_Computing_Position_Paper_WRIT_2012.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/Fog_Computing_Position_Paper_WRIT_2012.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Lost in Translation: Improving Decoy Documents via Automated Translation</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/writ_12_0.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Software Decoys for Insider Threat</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/softwaredecoy_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/softwaredecoy_0.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Modeling User Search Behavior for Masquerade Detection</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/RAID_2011_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/RAID_2011_0.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>On the Design and Execution of Cyber-Security User Studies: Methodology, Challenges, and Lessons Learned</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/CSET_2011_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/CSET_2011_0.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Decoy Document Deployment for Effective Masquerade Attack Detection</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/Dimva_2011_final.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/Dimva_2011_final.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Insider Threat Defense</td>  <td class='link'><a href='http://link.springer.com/referenceworkentry/10.1007/978-1-4419-5906-5_904' class='external' target='_blank'>http://link.springer.com/referenceworkentry/10.1007/978-1-4419-5906-5_904</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Monitoring Technologies for Mitigating Insider Threats</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/insider-bookchapter.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/insider-bookchapter.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>BotSwindler: Tamper Resistant Injection of Believable Decoys in VM-Based Hosts for Crimeware Detection</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/VMInject_RAID2010_0.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/VMInject_RAID2010_0.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Automating the Injection of Believable Decoys to Detect Snooping</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/insider-bookchapter.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/insider-bookchapter.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Addressing the Insider Threat</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/10-13.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/10-13.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Designing Host and Network Sensors to Mitigate the Insider Threat</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/DesigningSensorsInsider.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/DesigningSensorsInsider.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>Columbia University<a name='Columbia University'></a></td>
+<td class='title'>Baiting Inside Attackers Using Decoy Documents</td>  <td class='link'><a href='http://ids.cs.columbia.edu/sites/default/files/DecoyDocumentsCameraReadySECCOM09.pdf' class='external' target='_blank'>http://ids.cs.columbia.edu/sites/default/files/DecoyDocumentsCameraReadySECCOM09.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>Behavioral Analysis of Insider Threat: A Survey and Bootstrapped Prediction in Imbalanced Data</td>  <td class='link'><a href='http://www.cs.umd.edu/~npark/lab_papers/insider-ID-jan31.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~npark/lab_papers/insider-ID-jan31.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>PASS: A Parallel Activity Search System</td>  <td class='link'><a href='http://www.cs.umd.edu/~npark/lab_papers/PASSpaper.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~npark/lab_papers/PASSpaper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>Discovering the Top-k Unexplained Sequences in Time-Stamped Observation Data</td>  <td class='link'><a href='http://www.cs.umd.edu/~npark/lab_papers/Unexplained_Sequences_Journal.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~npark/lab_papers/Unexplained_Sequences_Journal.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>Pattern-based Centrality in Semantics Graphs</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>PADUA: Parallel Architecture to Detect Unexplained Activities</td>  <td class='link'><a href='http://www.cs.umd.edu/~npark/lab_papers/PADUA_paper.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~npark/lab_papers/PADUA_paper.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>Exploring Linked Data with Contextual Tag Clouds</td>  <td class='link'><a href='http://www.cs.umd.edu/~npark/lab_papers/jws_tagcloud.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~npark/lab_papers/jws_tagcloud.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Maryland<a name='University of Maryland'></a></td>
+<td class='title'>Infrastructure for Efficient Exploration of Large Scale Linked Data via Contextual Tag Clouds</td>  <td class='link'><a href='http://www.cs.umd.edu/~npark/lab_papers/iswc2013_cr.pdf' class='external' target='_blank'>http://www.cs.umd.edu/~npark/lab_papers/iswc2013_cr.pdf</a></td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
