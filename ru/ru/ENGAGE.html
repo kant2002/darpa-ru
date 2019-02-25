@@ -1,0 +1,643 @@
+
+  <!DOCTYPE html>
+  <html lang='ru'>
+  <head>
+  <meta charset="utf-8">
+  <title>DARPA - открытый каталог</title>
+
+  <link rel='stylesheet' href="css/nv.d3.css" type="text/css">
+  <link rel='stylesheet' href='css/style_v2.css' type='text/css'/>
+  <link rel='stylesheet' href='css/banner_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/header_footer.css' type='text/css'/>
+  <link rel='stylesheet' href='css/list_style.css' type='text/css'/>
+  <link rel='stylesheet' href='css/flick/jquery-ui-1.10.4.custom.css' type='text/css'/>
+  <script language="javascript" type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script language="javascript" type='text/javascript' src="jquery-ui.js"></script>
+  <script language="javascript" type='text/javascript' src="jstorage.js"></script>
+  <script language="javascript" type='text/javascript' src="utils.js"></script>
+  <script language="javascript" type='text/javascript' src="spin.js"></script>
+  <script language="javascript" type='text/javascript' src='jquery.tablesorter.min.js'></script>
+  <script language="javascript" type='text/javascript' src="list.min.js"></script>
+
+ <!--
+  <script language="javascript" type='text/javascript' src="d3.v3.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.d3.js"></script>
+  <script language="javascript" type='text/javascript' src="tooltip.js"></script>
+  <script language="javascript" type='text/javascript' src="nv.utils.js"></script>
+  <script language="javascript" type='text/javascript' src="legend.js"></script>
+  <script language="javascript" type='text/javascript' src="axis.js"></script>
+  <script language="javascript" type='text/javascript' src="distribution.js"></script>
+ -->
+  </head>
+  <body>
+
+
+<script type='text/javascript'>
+var swList = ssftList = pubList = spubList = dataList = sdtList = examplesList = sxamplesList = "";
+
+$(document).ready(function()
+    {
+
+	   $('#header_button').click(function(){
+			$.jStorage.set("searchTerm", $('#header_search').val());
+			window.location = 'catalog_search.html';
+	   });
+
+		$("#header_search").keyup(function(event){
+			if(event.keyCode == 13)
+				$('#header_button').click();
+		});
+
+	   $('#sftwr').tablesorter({
+		// sort on the first column and second column, order asc
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#pubs').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#data').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+	$('#examples').tablesorter({
+        	sortList: [[0,0],[1,0]]
+    	});
+        $('#splash').tablesorter({
+		// sort on the first column, order asc
+        	sortList: [[0,0]]
+    	});
+
+		//get the list of tabs and the number of tabs
+		var tabList = $('#tabs >ul >li');
+		var tabCount = $('#tabs >ul >li').size();
+
+		//create table tabs
+		$(function() {
+			$( "#tabs" ).tabs
+			var param_tab = decodeURIComponent(getUrlParams("tab"));
+			var param_term = decodeURIComponent(getUrlParams("term"));
+
+			if(param_tab && !param_term){
+				//console.log("tab");
+				if (param_tab == "tabs0")
+					$("#tabs").tabs({active: 0});  //software tab
+				else if (param_tab == "tabs1")
+					$("#tabs").tabs({active: 1});  //publications tab
+				else if (param_tab == "tabs2")
+					$("#tabs").tabs({active: 2});  //data tab
+				else if (param_tab == "tabs3")
+					$("#tabs").tabs({active: 3});  //examples tab
+			}
+			else if(param_tab && param_term){
+				//console.log("tab and term");
+				if (param_tab == "tabs0")
+					swSearch(param_term);
+				else if (param_tab == "tabs1")
+					pubSearch(param_term);
+				else if (param_tab == "tabs2")
+					dataSearch(param_term);
+				else if (param_tab == "tabs3")
+					exSearch(param_term);
+			}
+			else{
+				//console.log("no params");
+				if($("#tabs0"))
+					$("#tabs").tabs({active: 0}); //software tab
+				else if($("#tabs1"))
+					$("#tabs").tabs({active: 1}); //publications tab
+				else if($("#tabs2"))
+                    $("#tabs").tabs({active: 2}); //data tab
+                else
+					$("#tabs").tabs({active: 3}); //examples tab
+			}
+
+		});
+
+		//configure table search and clear button for software, publications, and data table
+		for (var i=0; i<tabCount; i++){
+
+			var tabName = tabList[i].textContent.toLowerCase(); //name of tab
+
+			if(tabName == "software"){
+				var tabTable = $('#tabs0 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var sw_options = {
+				  valueNames: tabHeaders
+				};
+
+				swList = new List(tabName, sw_options);
+
+				$("#clear0").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					swList.search();
+				});
+			}
+
+			if(tabName == "publications"){
+				var tabTable = $('#tabs1 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var pub_options = {
+				  valueNames: tabHeaders
+				};
+
+				pubList = new List(tabName, pub_options);
+
+				$("#clear1").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					pubList.search();
+				});
+
+			}
+
+			if(tabName == "data"){
+				var tabTable = $('#tabs2 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var data_options = {
+				  valueNames: tabHeaders
+				};
+
+				dataList = new List(tabName, data_options);
+
+				$("#clear2").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					dataList.search();
+				});
+
+			}
+
+			if(tabName == "examples"){
+				var tabTable = $('#tabs3 table'); //table within this tab
+				var tabHeaders = getTableHeaders(tabTable);
+
+				var examples_options = {
+				  valueNames: tabHeaders
+				};
+
+				exList = new List(tabName, examples_options);
+
+				$("#clear3").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					exList.search();
+				});
+
+			}
+
+			if(tabName == "search"){
+
+				var table_clone = $('#tabs table').clone();
+				for (var k=0; k<table_clone.length; k++){
+					var searchHeaders = getTableHeaders(table_clone[k]);
+					var search_options = {
+						  valueNames: searchHeaders
+					};
+
+					if (table_clone[k].id == "sftwr"){
+						$("#softwareSearch #sftwrTable").append(table_clone[k]);
+						//tables are hidden initially
+						$("#softwareSearch #sftwrTable").hide();
+						ssftList = new List("softwareSearch", search_options);
+					}
+					else if (table_clone[k].id == "pubs"){
+
+						$("#publicationsSearch #pubTable").append(table_clone[k]);
+						$("#publicationsSearch #pubTable").hide();
+						spubList = new List("publicationsSearch", search_options);
+					}
+					else if (table_clone[k].id == "examples"){
+
+						$("#examplesSearch #examplesTable").append(table_clone[k]);
+						$("#examplesSearch #examplesTable").hide();
+						sxampleList = new List("examplesSearch", search_options);
+					}
+					else{
+						$("#dataSearch #dataTable").append(table_clone[k]);
+						$("#dataSearch #dataTable").hide();
+						sdtList = new List("dataSearch", search_options);
+					}
+
+
+				}
+
+				$("#clear300").click(function() {
+					var currId = this.id.match(/\d+/g);
+					$("#search" + currId[0]).val("");
+					if (ssftList != "")
+						ssftList.search();
+					if (spubList != "")
+						spubList.search();
+					if (sdtList != "")
+						sdtList.search();
+					if (sxampleList != "")
+						sxampleList.search()
+					//when search is cleared tables need to be hidden
+					$("#softwareSearch #sftwrTable").hide();
+					$("#publicationsSearch #pubTable").hide();
+					$("#dataSearch #dataTable").hide();
+					$("#examplesSearch #examplesTable").hide();
+
+				});
+
+			}
+		}
+	
+		var leaving_timeout;
+
+		//set the click action for the back button on the leaving window.
+		$('#back').click(function () {
+			cancelLeaving(); //cancel leaving, user clicks 'back'
+		});
+
+		//for any links with the 'external' class, set the click event
+		console.log($('a.external'));
+		$('a.external').click(function (ev) {
+			console.log("link clicked");
+			//prevent the default action of the event, this will stop the href in the anchor being followed
+			//before the animation has started, u can also use return false;
+			ev.preventDefault();
+			//stop any actions if a new link is clicked.
+			cancelLeaving();
+			//store a reference to the anchor tag
+			var $self = $(this);
+			showLeavingMessage($self);
+
+			leaving_timeout = setTimeout(function () { leave($self); }, 15000); //leave in 15 seconds
+		});
+
+
+		function leave(leavingLink) {
+			//open an external link
+			window.open(leavingLink.attr('href'));
+			cancelLeaving(); //cancel leaving, user has left.
+		}
+
+		function showLeavingMessage(leavingLink) {
+			//show the leaving message
+			$('#goto_link').html("<a href='" + leavingLink.attr('href') + "' target='_bl' onclick='cancelLeaving();'>" + leavingLink.attr('href') + "</a>");
+			//$("body").css("background-color", "grey");
+			$('#overlay').show();
+
+		}
+
+		function cancelLeaving() {
+			//cancel leaving.  hide the leaving box
+			clearTimeout(leaving_timeout); //if the timer is set to leave in 15 seconds, this will cancel it.
+			$('#overlay').hide();
+		}	
+				
+		
+		
+    }
+);
+
+function jump(h){
+    var url = location.href;
+    location.href = "#"+h;
+        history.replaceState(null,null,url)
+}
+
+function swSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 0}); //publications tab
+	var search_box = $("#search0");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		swList.search(search_text);
+
+	},300);
+}
+
+function pubSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 1}); //publications tab
+	var search_box = $("#search1");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		pubList.search(search_text);
+	},300);
+}
+
+function dataSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 2}); //publications tab
+	var search_box = $("#search2");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function exSearch(link){
+	var search_text = "";
+	if(link.hash)
+		search_text = link.hash.replace("#", "");
+	else
+		search_text = link;
+	$('#tabs').tabs({active: 3}); //examples tab
+	var search_box = $("#search3");
+	search_box.val(search_text);
+
+	setTimeout(function(){
+		$('html, body').animate({
+			scrollTop: $("#tabs").offset().top
+		}, 0);
+		search_box.focus();
+		search_box.select();
+		dataList.search(search_text);
+	},300);
+}
+
+function allSearch(this_search){
+	if(this_search.value != "" && this_search.value.length >= 3){
+		var value = this_search.value;
+		//TODO: Implement Stop Words
+		ssftList.search(value);
+
+		//hide table if there are no rows that match the search term
+		if ($("#softwareSearch #sftwrTable tbody").children().length != 0)
+			$("#softwareSearch #sftwrTable").show();
+		else
+			$("#softwareSearch #sftwrTable").hide();
+
+		if(spubList != ""){
+			var value = this_search.value;
+			spubList.search(value);
+
+			if ($("#publicationsSearch #pubTable tbody").children().length != 0)
+				$("#publicationsSearch #pubTable").show();
+			else
+				$("#publicationsSearch #pubTable").hide();
+		}
+
+		if(sdtList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#dataSearch #dataTable tbody").children().length != 0)
+				$("#dataSearch #dataTable").show();
+			else
+				$("#dataSearch #dataTable").hide();
+		}
+
+		if(sxampleList != ""){
+			var value = this_search.value;
+			sdtList.search(value);
+
+			if ($("#examplesSearch #examplesTable tbody").children().length != 0)
+				$("#examplesSearch #examplesTable").show();
+			else
+				$("#examplesSearch #examplesTable").hide();
+		}
+
+	}
+	else{
+		//if search_term is empty or not 3 chars in length, make sure the tables are hidden
+		$("#publicationsSearch #pubTable").hide();
+		$("#softwareSearch #sftwrTable").hide();
+		$("#dataSearch #dataTable").hide();
+	}
+}
+
+function getTableHeaders(table){
+	var this_table;
+
+	if(table[0])
+		this_table = table[0];
+	else
+		this_table = table;
+
+	var headerRow = this_table.tHead.rows[0].cells; //header row of table
+	var tableHeaders = [];
+
+	for (var j=0; j<headerRow.length; j++)
+		tableHeaders.push(headerRow[j].textContent.toLowerCase());
+
+	return tableHeaders;
+}
+
+function licenseInfo(short_nm, long_nm, link, description, event){
+
+	var x=event.clientX;
+	var y=event.clientY;
+
+	$( "#dialog" ).removeClass("ribbon-dialog");
+	$(".ui-dialog").removeClass("ribbon-dialog vertical-green vertical-red");
+	$(".ui-dialog-titlebar").removeClass("ribbon-dialog-text");
+
+	if(short_nm != ""){
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: short_nm
+		});
+
+		if(description != "")
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>: " + description);
+		else
+			$("#dialog").html("<a href='" + link + "'>" + long_nm + "</a>");
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		  });
+	}
+}
+
+function dateInfo(ribbon, event){
+	if(ribbon !="")
+	{
+		var date_id = document.getElementById(ribbon).firstChild.id;
+		var str_pattern = /(\d{4})(\d{2})(\d{2})/;
+		var date = date_id.replace(str_pattern,"$2-$3-$1"); //full date string
+
+		var ribbon_type = document.getElementById(ribbon).firstChild.getAttribute("name");
+		var x=event.clientX;
+		var y=event.clientY;
+		var text = "";
+		var background = "";
+
+		if(ribbon_type == "NEW"){
+			text = "CREATED";
+			$(".ui-dialog").removeClass('vertical-green');
+			background = "vertical-red";
+		}
+		else{
+			text = ribbon_type;
+			$(".ui-dialog").removeClass('vertical-red');
+			background = "vertical-green";
+		}
+
+		$( "#dialog" ).empty().dialog({
+		position: [x , y - 20],
+		title: text + ": " + date,
+		});
+
+		$( "#dialog" ).addClass("ribbon-dialog");
+		$(".ui-dialog").addClass(background + " ribbon-dialog");
+		$(".ui-dialog-titlebar").addClass("ribbon-dialog-text");
+
+
+
+		$(".ui-dialog").mouseleave( function () {
+			 $( "#dialog" ).dialog( "close" );
+		});
+	}
+}
+
+</script>
+<div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Назад</a></p></div></div><header class='darpa-header'><div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='Open-Catalog-Single-Big.png'></a></div><div class='darpa-header-text no-space'><span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: #4C9509;'>Information Innovation Office (I2O)</a></span></div><div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search'></input><button id='header_button'>Search</button></div></div></header>
+  <h2><a href='http://www.darpa.mil/program/engage' class='programlink'>ENGAGE</a></h2>
+<div class='left-paragraph'><p>DARPA created the ENGAGE program to enable the development of education and training systems that are better, faster, continuously optimized, and massively scalable. ENGAGE is exploring software- and data-intensive education and training methods that harness the power of large user populations to optimize instruction.<p><p>Program Manager: <a href='http://www.darpa.mil/staff/mr-wade-shen' class='programmanagerlink'>Mr. Wade Shen</a></p><p>Contact: <a href='mailto:wade.shen@darpa.mil'>wade.shen@darpa.mil</a><p><p>The content below has been generated by organizations that are partially funded by DARPA; the views and conclusions contained therein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of DARPA or the U.S. Government.</p><ul><li>The Software Table lists performers with one row per piece of software. Each piece of software has licensing information, a link to an external project page or contact information, and where possible a link to the code repository for the project.</li></ul><ul><li>В таблице публикаций содержится автор(ы), заголовок и ссылки на материалы, проверенные сверками, связанные с конкретными программами DARPA.</li></ul><p>Report a problem: <a href="mailto:opencatalog@darpa.mil">opencatalog@darpa.mil</a></p><p>Last updated: November 13, 2015</p></div><div id='dialog'></div><div id='tabs' class='table-tabs'><ul><li><a href='#tabs0'>Программное обеспечение</a></li><li><a href='#tabs1'>Публикации</a></li><li><a href='#tabs300'>Поиск</a></li></ul><div id='software'><div id='tabs0'><input class='search' placeholder='Поиск' id='search0'/><button class='clear_button' id='clear0'>Очистить</button><table id='sftwr' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Проект</th><th>Категория</th><th>Код</th><th>Описание</th><th>Лицензия</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>CMU Entertainment Technology Center <a href='#CMU Entertainment Technology Center' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://www.etc.cmu.edu/projects/sci-fri/' class='external' target='_blank'>RumbleBlocks, Beanstalk, PuppyBot Rescue</a></td>  <td class=category>Large-scale analytics, learning assessments, adaptive learning technologies, optimum learning pathways</td>
+  <td class=code> <a href='mailto:daniel.ragsdale@darpa.mil'>daniel.ragsdale@darpa.mil</a> </td>
+ <td class=description> SCI-FRI (Science Friction) is a project working towards inspiring young minds to pursue science and engineering as a career. Initiated by DARPA, this is a multi-year project working in conjunction with many different institutions and organizations, such as the Sesame Workshop and Carnegie Mellon's Human Computer Interaction Institute. The end-product will be a series of multi-platform games that apply adaptive, in-game analytics for Pre-K-3rd graders that inspires interest and teaches basic concepts in the field of science. (C#/HTML5/CSS/JavaScript/CreateJS Suite/Flash/Unity3D/3DS Max) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>University of Washington <a href='#University of Washington' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://centerforgamescience.org/games/' class='external' target='_blank'>TreeFrog Treasure, Refraction, Creature Capture, DragonBox Adaptive</a></td>  <td class=category>Large-scale analytics, learning assessments, adaptive learning technologies, optimum learning pathways</td>
+  <td class=code> <a href='mailto:daniel.ragsdale@darpa.mil'>daniel.ragsdale@darpa.mil</a> </td>
+ <td class=description> The games create by the Center for Game Science at the University of Washington are highly adaptive games that also perform gameplay analytics across all game players.  Thus, the games continuously optimize and are massively scalable. (ActionScript3/Java/GWT - Java/PHP) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>CMU Robotics Academy <a href='#CMU Robotics Academy' onclick='pubSearch(this)'>(publications)</a></td>
+ <td width='202' class='project'><a href='http://cs2n.org/' class='external' target='_blank'>Computer Science Student Network</a></td>  <td class=category>Large-scale analytics, learning assessments, adaptive learning technologies, optimum learning pathways</td>
+  <td class=code> <a href='mailto:daniel.ragsdale@darpa.mil'>daniel.ragsdale@darpa.mil</a> </td>
+ <td class=description> CS2N, or Computer Science Student Network, is a virtual center for computer science activities, robotics programming competitions, and computer science courses. CS2N provides step-by-step lessons to make programming easy for students by also providing access to virtual robots. (Unity/Maya/Ruby on Rails/Java/PHP/HTML5) </td>
+<td class=license><span onmouseover='licenseInfo("UGPR", "Unlimited Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license for projects built solely built under government funding that allows for free dissemination of the work.", event)'>UGPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>Intific</td>
+ <td width='202' class='project'><a href='http://www.brainpopjr.com/games/spaceforce/' class='external' target='_blank'>SpaceForce</a></td>  <td class=category>Large-scale analytics, learning assessments, adaptive learning technologies, optimum learning pathways</td>
+  <td class=code> <a href='mailto:daniel.ragsdale@darpa.mil'>daniel.ragsdale@darpa.mil</a> </td>
+ <td class=description> The goal of RoboBall SpaceForce is gameplay that results in measurable metrics that demonstrate games provide an innovative approach to STEM learning and student emotional resilience. RoboBall SpaceForce runs in OurSpace, a portal built to host RoboBall SpaceForce, its data and an HTML5 level editor. Players can login & register with a unique ID to save game progress. (C++/C#/ActionScript/Lua/Python) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+<tr>
+  <td class='team'>UCLA CRESST</td>
+ <td width='202' class='project'><a href='http://engage.cse.ucla.edu/' class='external' target='_blank'>Go Vector Go, Team Vector</a></td>  <td class=category>Large-scale analytics, learning assessments, adaptive learning technologies, optimum learning pathways</td>
+  <td class=code> <a href='mailto:daniel.ragsdale@darpa.mil'>daniel.ragsdale@darpa.mil</a> </td>
+ <td class=description> CRESST games are designed to help young children (in grades K-3) learn advanced physics and promote scientific reasoning and socio-emotional skills. The games promote improved understanding of the physics concepts force and motion, with emphasis on force magnitude & direction, friction, mass, gravity, and slope. These games also promote improved understanding of key social and emotional skills, such as anti-bullying and empathy. (C++/C#/ActionScript/Lua/Python) </td>
+<td class=license><span onmouseover='licenseInfo("GPR", "Government Purpose Rights", "http://www.acq.osd.mil/dpap/dars/dfars/html/current/227_71.htm", "Software license allowing free release of the project within the government only.", event)'>GPR</span> </td>
+ </tr>
+
+</tbody>
+</table>
+</div></div><div id='publications'><div id='tabs1'><input class='search' placeholder='Поиск' id='search1'/><button class='clear_button' id='clear1'>Очистить</button><table id='pubs' class='tablesorter'>
+ <thead>
+ <tr><th>Команда</th><th>Title</th><th>Link</th></tr>
+ </thead>
+ <tbody  class='list'><tr>
+  <td class='team'>CMU Entertainment Technology Center<a name='CMU Entertainment Technology Center'></a></td>
+<td class='title'>Beanstalk: A Unity Game Addressing Balance Principles, Socio-Emotional Learning and Scientific Inquiry</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6659126' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6659126</a></td>
+</tr>
+<tr>
+  <td class='team'>CMU Entertainment Technology Center<a name='CMU Entertainment Technology Center'></a></td>
+<td class='title'>Helios: An HTML5 Game Teaching Proportional Reasoning To Child Players</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6632614' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6632614</a></td>
+</tr>
+<tr>
+  <td class='team'>CMU Entertainment Technology Center<a name='CMU Entertainment Technology Center'></a></td>
+<td class='title'>Supporting Social-Emotional Development in Collaborative Inquiry Games for K-3 Science Learning</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>CMU Entertainment Technology Center<a name='CMU Entertainment Technology Center'></a></td>
+<td class='title'>Rumble Blocks: Teaching Science Concepts to Young Children Through a Unity Game</td>  <td class='link'><a href='http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6314570' class='external' target='_blank'>http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6314570</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>A Mixed-Initiative Tool for Designing Level Progressions in Games</td>  <td class='link'><a href='http://www.ericbutler.net/media/papers/uist2013_progression.pdf' class='external' target='_blank'>http://www.ericbutler.net/media/papers/uist2013_progression.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>The Effects of Age on Player Behavior in Educational Games</td>  <td class='link'><a href='http://homes.cs.washington.edu/~eorourke/papers/age_behavior_fdg.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~eorourke/papers/age_behavior_fdg.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Quantifying over Play: Constraining Undesirable Solutions in Puzzle Design, Foundations of Digital Games</td>  <td class='link'><a href='http://adamsmith.as/papers/fdg2013_shortcuts.pdf' class='external' target='_blank'>http://adamsmith.as/papers/fdg2013_shortcuts.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Automatic Redesign of Local Playspace Properties</td>  <td class='link'><a href='http://homes.cs.washington.edu/~awb/data/Bauer_FDG_2013.pdf' class='external' target='_blank'>http://homes.cs.washington.edu/~awb/data/Bauer_FDG_2013.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>Predicting Player Moves in an Educational Game: A Hybrid Approach</td>  <td class='link'><a href='http://www.ericbutler.net/media/papers/edm2013_heuristics.pdf' class='external' target='_blank'>http://www.ericbutler.net/media/papers/edm2013_heuristics.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>University of Washington<a name='University of Washington'></a></td>
+<td class='title'>A Trace-based Framework for Analyzing and Synthesizing Educational Progressions</td>  <td class='link'><a href='http://dub.washington.edu/pubs/340' class='external' target='_blank'>http://dub.washington.edu/pubs/340</a></td>
+</tr>
+<tr>
+  <td class='team'>CMU Robotics Academy<a name='CMU Robotics Academy'></a></td>
+<td class='title'>Designing Educative Guides: Reconceptualizing Teacher's Role in Teacherless Cognitive Tutor-based Robotics Instruction.</td>  <td class='link'><a href='http://www.education.rec.ri.cmu.edu/content/educators/research/files/AERA%202012%20Paper_King,%20Stein,%20Schunn.pdf' class='external' target='_blank'>http://www.education.rec.ri.cmu.edu/content/educators/research/files/AERA%202012%20Paper_King,%20Stein,%20Schunn.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CMU Robotics Academy<a name='CMU Robotics Academy'></a></td>
+<td class='title'>Resources for robot competition success: Assessing math use in grade-school-level engineering design</td>  <td class='link'>Not Yet Published</td>
+</tr>
+<tr>
+  <td class='team'>CMU Robotics Academy<a name='CMU Robotics Academy'></a></td>
+<td class='title'>Calculational versus mechanistic mathematics in propelling the development of physical knowledge</td>  <td class='link'><a href='http://www.education.rec.ri.cmu.edu/content/educators/research/files/SilkSchunn2011a-JPS.pdf' class='external' target='_blank'>http://www.education.rec.ri.cmu.edu/content/educators/research/files/SilkSchunn2011a-JPS.pdf</a></td>
+</tr>
+<tr>
+  <td class='team'>CMU Robotics Academy<a name='CMU Robotics Academy'></a></td>
+<td class='title'>Resources for learning robots: Facilitating the incorporation of mathematical models in students' engineering design strategies</td>  <td class='link'><a href='http://www.education.rec.ri.cmu.edu/content/educators/research/files/SilkSchunn2011a-AERA.pdf' class='external' target='_blank'>http://www.education.rec.ri.cmu.edu/content/educators/research/files/SilkSchunn2011a-AERA.pdf</a></td>
+</tr>
+
+</tbody>
+</table>
+
+</tbody>
+</table>
+<br>
+</div></div><div id='allSearch'><div id='tabs300'><div id='softwareSearch'><input class='search' placeholder='Поиск' id='search300' onkeyup='allSearch(this)'/><button class='clear_button' id='clear300'>Очистить</button><div id='sftwrTable'><h2>Программное обеспечение</h2></div></div><div id='publicationsSearch'><div id='pubTable'><h2>Публикации</h2></div></div></div></div></div><br>
+
+<footer>
+<div class='footer-style'>
+<hr>
+<p><a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+<a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a></p>
+</div>
+</footer>
+</div>
+</body>
+</html>
