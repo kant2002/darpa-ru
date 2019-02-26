@@ -519,24 +519,24 @@
     </div>
     <header class='darpa-header'>
         <div class='darpa-header-images'><a href='http://www.darpa.mil/'><img class='darpa-logo' src='/darpa-transparent-v2.png'></a><a href='index.html' class='programlink'><img src='/Open-Catalog-Single-Big.png'></a></div>
-        <div class='darpa-header-text no-space'/>
-            {% if page.office %/}
-            <span><font color='/white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: {{ page.officecolor }};'>{{ page.office }}</a></span>
-            {% endif %/}
-        </div/>
-            <div class='catalog_search_outer'><div class/='catalog_search_inner'><input id='header_search' type='search' maxlength="30"></input><button id='header_button'>Search</button></div></div>
-        </header/>
-    {{ content }/}
-    <div id="ove/rlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div>
-    <footer/>
-        <di/v class='footer-style'>
-           / <hr>
+        <div class='darpa-header-text no-space'>
+            {% if page.office %}
+            <span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: {{ page.officecolor }};'>{{ page.office }}</a></span>
+            {% endif %}
+        </div>
+            <div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search' maxlength="30"></input><button id='header_button'>Search</button></div></div>
+        </header>
+    {{ content }}
+    <div id="overlay"><div class="leavingbox"><p>You are now leaving the DARPA.mil website that is under the control and  management of DARPA. The appearance of hyperlinks does not constitute endorsement by DARPA of non-U.S. Government sites or the information, products, or services contained therein. Although DARPA may or may not use these sites as additional distribution channels for Department of Defense information, it does not exercise editorial control over all of the information that you may find at these locations. Such links are provided consistent with the stated purpose of this website.</p><p>After reading this message, click <span id=goto_link></span> to continue immediately.</p><p><a id="back" href="#">Go Back</a></p></div></div>
+    <footer>
+        <div class='footer-style'>
+           <hr>
             <p>
-            /    <a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
-            /    <a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a>
-            /</p>
-        </di/v>
-    </footer/>
-    </div/>
-</body/>
+                <a href='http://www.darpa.mil/policy/foia'>FOIA</a> | <a href='http://www.darpa.mil/policy/privacy-policy'>Privacy and Security</a> |
+                <a href='http://www.darpa.mil/policy/no-fear-act'>No Fear Act</a> | <a href='http://dodcio.defense.gov/DoDSection508/Std_Stmt.aspx'>Accessibility/Section 508</a>
+            </p>
+        </div>
+    </footer>
+    </div>
+</body>
 </html>
