@@ -367,7 +367,13 @@ display:table-cell;
 vertical-align:middle; 
 padding: 6px 10px;
 }
-
+.lang_selection {
+    display: table-cell;
+    vertical-align: middle;
+    white-space: nowrap;
+    width: 50px;
+}
+.lang_selection a { color: white}
 #overlay {
   position: fixed;
   top: 0;
