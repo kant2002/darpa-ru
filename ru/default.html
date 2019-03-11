@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang='ru'>
 <head>
     <meta charset="utf-8">
@@ -25,6 +25,14 @@
      <script language="javascript" type='text/javascript' src="/axis.js"></script>
      <script language="javascript" type='text/javascript' src="/distribution.js"></script>
     -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62310812-2"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62310812-2');
+    </script>
 </head>
 <body>
 
@@ -523,6 +531,10 @@
             {% if page.office %}
             <span><font color='white'> / </font><a href='http://www.darpa.mil/about-us/offices/i2o' class='programheader' style='color: {{ page.officecolor }};'>{{ page.office }}</a></span>
             {% endif %}
+        </div>
+        <div class="lang_selection">
+            <a href="/">En</a>
+            <a href="/ru">Ru</a>
         </div>
             <div class='catalog_search_outer'><div class='catalog_search_inner'><input id='header_search' type='search' maxlength="30"></input><button id='header_button'>Search</button></div></div>
         </header>
